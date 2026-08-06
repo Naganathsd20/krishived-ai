@@ -8,6 +8,7 @@ import {
   FileText,
   Settings,
   HelpCircle,
+  User,
   LucideIcon,
 } from "lucide-react";
 
@@ -37,8 +38,13 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
     items: [
       {
         title: "Overview",
-        href: "/",
+        href: "/dashboard",
         icon: LayoutDashboard,
+      },
+      {
+        title: "Profile",
+        href: "/profile",
+        icon: User,
       },
       {
         title: "Crop Advisory",

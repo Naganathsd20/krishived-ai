@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   Sprout,
   BrainCircuit,
@@ -15,6 +16,9 @@ import {
   Layers,
   CheckCircle2,
   AlertTriangle,
+  User as UserIcon,
+  Globe,
+  Shield,
 } from "lucide-react";
 import {
   PageContainer,
@@ -33,13 +37,54 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
-import { SkeletonCard } from "@/components/ui/loading";
+import { SkeletonCard, Spinner } from "@/components/ui/loading";
+
+interface MongoUserProfile {
+  _id: string;
+  clerkId: string;
+  name: string;
+  email: string;
+  image: string;
+  role: string;
+  language: string;
+}
 
 export default function OverviewPage() {
+  const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
+  const [dbUser, setDbUser] = useState<MongoUserProfile | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [demoInput, setDemoInput] = useState("");
   const [inputError, setInputError] = useState("");
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
+
+  useEffect(() => {
+    async function syncAndFetchUser() {
+      try {
+        const res = await fetch("/api/user/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setDbUser(data.user);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch synced user:", err);
+      } finally {
+        setLoadingUser(false);
+      }
+    }
+
+    if (isClerkLoaded) {
+      syncAndFetchUser();
+    }
+  }, [isClerkLoaded]);
+
+  const displayName =
+    dbUser?.name ||
+    clerkUser?.fullName ||
+    clerkUser?.firstName ||
+    "Farmer";
 
   const handleTestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,11 +104,11 @@ export default function OverviewPage() {
     <PageContainer>
       {/* Page Header */}
       <PageHeader
-        title="Project Foundation & Component Suite"
-        description="Welcome to KrishiVed AI — Next-gen scalable architectural foundation with glassmorphism design tokens, Framer Motion primitives, and custom green theme."
+        title={`👋 Welcome ${displayName}`}
+        description="Welcome to KrishiVed AI — Real-time smart agricultural intelligence, AI crop advisory, and farm telemetry analytics."
         badge={
-          <Badge variant="glass" dot>
-            Foundational Build Ready
+          <Badge variant="emerald" dot>
+            Authenticated Farmer Dashboard
           </Badge>
         }
         action={
@@ -76,6 +121,102 @@ export default function OverviewPage() {
           </Button>
         }
       />
+
+      {/* User Profile Card */}
+      <div className="mb-8">
+        <Card variant="glass" className="border-emerald-200/80 shadow-md">
+          {loadingUser ? (
+            <div className="p-6 flex items-center justify-center gap-3">
+              <Spinner size="md" />
+              <span className="text-sm font-medium text-slate-600">
+                Synchronizing user profile with MongoDB...
+              </span>
+            </div>
+          ) : (
+            <div className="p-6 flex flex-col md:flex-row items-center md:items-start gap-6">
+              {/* Profile Picture */}
+              <div className="relative shrink-0">
+                {dbUser?.image || clerkUser?.imageUrl ? (
+                  <img
+                    src={dbUser?.image || clerkUser?.imageUrl}
+                    alt={displayName}
+                    className="w-20 h-20 rounded-2xl object-cover ring-4 ring-emerald-500/20 shadow-md"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white text-2xl font-bold ring-4 ring-emerald-500/20 shadow-md">
+                    {displayName.charAt(0)}
+                  </div>
+                )}
+                <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center text-[10px] text-white">
+                  ✓
+                </span>
+              </div>
+
+              {/* Profile Information */}
+              <div className="flex-1 w-full text-center md:text-left">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">
+                      {displayName}
+                    </h3>
+                    <p className="text-sm font-medium text-slate-500">
+                      {dbUser?.email || clerkUser?.primaryEmailAddress?.emailAddress}
+                    </p>
+                  </div>
+                  <Badge variant="glass" className="self-center md:self-start">
+                    MongoDB Synced
+                  </Badge>
+                </div>
+
+                {/* Profile Meta Grid */}
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100">
+                  <div className="bg-white/80 rounded-xl p-3 border border-slate-200/80 shadow-xs flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <Shield className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Role
+                      </span>
+                      <span className="text-sm font-bold text-slate-800">
+                        {dbUser?.role || "Farmer"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/80 rounded-xl p-3 border border-slate-200/80 shadow-xs flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
+                      <Globe className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Language
+                      </span>
+                      <span className="text-sm font-bold text-slate-800">
+                        {dbUser?.language || "English"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1 bg-white/80 rounded-xl p-3 border border-slate-200/80 shadow-xs flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                      <UserIcon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Account Status
+                      </span>
+                      <span className="text-sm font-bold text-emerald-600">
+                        Verified
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
+      </div>
 
       {/* Top Telemetry KPI Cards */}
       <GridContainer cols={4}>

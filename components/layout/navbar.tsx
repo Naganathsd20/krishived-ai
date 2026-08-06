@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import { Sprout, Search, Bell, Menu, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { UserButton, SignOutButton, useUser } from "@clerk/nextjs";
+import { Sprout, Search, Bell, Menu, Sparkles, User as UserIcon, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { APP_CONFIG } from "@/lib/constants";
 
 interface NavbarProps {
@@ -11,6 +12,8 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
+  const { user } = useUser();
+
   return (
     <header className="sticky top-0 z-40 w-full glass-nav px-4 sm:px-6 py-3 transition-all">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
@@ -25,7 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
             <Menu className="w-5 h-5" />
           </Button>
 
-          <div className="flex items-center gap-2.5 cursor-pointer group">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
               <Sprout className="w-6 h-6" />
             </div>
@@ -42,7 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
                 {APP_CONFIG.tagline}
               </span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Center: Global Search Bar */}
@@ -61,24 +64,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
           </div>
         </div>
 
-        {/* Right: Actions, Status & User Pill */}
+        {/* Right: Actions, Quick Links, Profile & Clerk Logout */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Status Badge */}
-          <div className="hidden xl:flex">
-            <Badge variant="glass" dot>
-              System Operational
-            </Badge>
-          </div>
+          {/* Dashboard Link */}
+          <Link href="/dashboard" className="hidden lg:flex">
+            <Button variant="ghost" size="sm" leftIcon={<LayoutDashboard className="w-3.5 h-3.5" />}>
+              Dashboard
+            </Button>
+          </Link>
 
-          {/* Quick AI Action Button */}
-          <Button
-            variant="emerald"
-            size="sm"
-            className="hidden sm:flex"
-            leftIcon={<Sparkles className="w-3.5 h-3.5" />}
-          >
-            AI Assistant
-          </Button>
+          {/* Profile Link */}
+          <Link href="/profile" className="hidden lg:flex">
+            <Button variant="ghost" size="sm" leftIcon={<UserIcon className="w-3.5 h-3.5" />}>
+              Profile
+            </Button>
+          </Link>
 
           {/* Notifications */}
           <Button
@@ -90,11 +90,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
             <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white" />
           </Button>
 
-          {/* User Profile Shell (Ready for Clerk) */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-200/80">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-100 to-teal-100 border border-emerald-200 flex items-center justify-center text-emerald-800 font-bold text-xs shadow-xs">
-              KV
-            </div>
+          {/* Clerk User Button & Logout Action */}
+          <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200/80">
+            <Link href="/profile" className="hidden sm:flex flex-col text-right">
+              <span className="text-xs font-bold text-slate-800 hover:text-emerald-600 transition-colors">
+                {user?.fullName || user?.firstName || "Farmer"}
+              </span>
+              <span className="text-[10px] text-slate-500 font-medium">View Profile</span>
+            </Link>
+
+            <UserButton />
+
+            <SignOutButton redirectUrl="/">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-slate-500 hover:text-rose-600 rounded-2xl"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </SignOutButton>
           </div>
         </div>
       </div>
