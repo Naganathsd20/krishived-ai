@@ -54,7 +54,7 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
       },
       {
         title: "Disease Diagnostics",
-        href: "#",
+        href: "/disease-detection",
         icon: BrainCircuit,
         isNew: true,
       },
