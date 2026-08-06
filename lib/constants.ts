@@ -60,7 +60,7 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
       },
       {
         title: "Weather & Soil",
-        href: "#",
+        href: "/weather-soil",
         icon: CloudSun,
       },
     ],

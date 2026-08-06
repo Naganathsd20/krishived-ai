@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { IDiseaseAnalysisResult } from "@/types/disease";
+import { ISoilRecommendationResult } from "@/types/soil";
+import { IWeatherData } from "@/types/weather";
 
 const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -82,6 +84,76 @@ If the image is healthy with no disease detected, set "disease" to "Healthy Crop
 }
 
 /**
+ * Generates an agronomic Soil & Crop Recommendation report using Gemini 1.5 Flash AI
+ * based on regional atmospheric telemetry (temperature, humidity, wind, pressure, rain probability).
+ */
+export async function generateSoilRecommendation(
+  weather: IWeatherData
+): Promise<ISoilRecommendationResult> {
+  const prompt = `
+You are an expert agronomist and soil scientist AI engine for KrishiVed AI. Based on the following regional weather and atmospheric telemetry:
+
+- Region / City: ${weather.city}, ${weather.country}
+- Temperature: ${weather.temperature}°C (Feels like: ${weather.feelsLike}°C, Min: ${weather.tempMin}°C, Max: ${weather.tempMax}°C)
+- Relative Humidity: ${weather.humidity}%
+- Wind Speed: ${weather.windSpeed} km/h (${weather.windDirection})
+- Atmospheric Pressure: ${weather.pressure} hPa
+- Rain Probability: ${weather.rainProbability}%
+- Current Weather Condition: ${weather.condition} (${weather.description})
+
+Generate a comprehensive, scientific soil health & crop recommendation report.
+
+Return your response strictly in valid, raw JSON format with NO markdown wrapping, matching this exact structure:
+
+{
+  "city": "${weather.city}",
+  "temperature": ${weather.temperature},
+  "humidity": ${weather.humidity},
+  "windSpeed": ${weather.windSpeed},
+  "pressure": ${weather.pressure},
+  "rainProbability": ${weather.rainProbability},
+  "weatherCondition": "${weather.condition}",
+  "soilHealthScore": "e.g. 88/100 (Optimal Soil Fertility)",
+  "bestCrop": "Primary recommended crop or combination (e.g. Wheat / Soybean)",
+  "alternativeCrops": ["Alternative Crop 1", "Alternative Crop 2", "Alternative Crop 3"],
+  "irrigationRecommendation": "Detailed irrigation strategy (e.g. Drip irrigation 45 mins every alternate morning)",
+  "fertilizerRecommendation": "Recommended NPK & organic fertilizer formulation (e.g. NPK 10-26-26 @ 50kg/acre + Neem coated Urea)",
+  "diseaseRiskLevel": "Low" | "Medium" | "High",
+  "farmingTips": ["Practical Tip 1", "Practical Tip 2", "Practical Tip 3"],
+  "explanations": {
+    "cropChoice": "Scientific explanation linking temperature and humidity to crop selection",
+    "irrigation": "Explanation linking rain probability and wind speed to irrigation frequency",
+    "fertilizer": "Explanation for nutrient formulation based on climate and soil moisture"
+  }
+}
+`;
+
+  try {
+    if (!apiKey || apiKey.includes("DemoKey")) {
+      console.warn(
+        "GEMINI_API_KEY is demo/unconfigured. Using smart agricultural soil engine fallback..."
+      );
+      return generateFallbackSoilRecommendation(weather);
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+
+    const cleanedText = responseText
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const parsed: ISoilRecommendationResult = JSON.parse(cleanedText);
+    return parsed;
+  } catch (error) {
+    console.error("Gemini Soil AI Analysis Error:", error);
+    return generateFallbackSoilRecommendation(weather);
+  }
+}
+
+/**
  * Fallback diagnostic provider when Gemini Vision API is unavailable or rate-limited.
  */
 function generateFallbackDiagnosis(imageUrl: string): IDiseaseAnalysisResult {
@@ -143,5 +215,55 @@ function generateFallbackDiagnosis(imageUrl: string): IDiseaseAnalysisResult {
       "Spray organic Neem oil solution",
       "Increase spacing between crowded branches"
     ]
+  };
+}
+
+/**
+ * Fallback soil recommendation engine when Gemini API key is placeholder or rate-limited.
+ */
+function generateFallbackSoilRecommendation(
+  weather: IWeatherData
+): ISoilRecommendationResult {
+  const isWarm = weather.temperature >= 25;
+  const isHumid = weather.humidity >= 60;
+
+  const bestCrop = isWarm
+    ? isHumid
+      ? "Soybean & Hybrid Maize"
+      : "Cotton & Sorghum (Jowar)"
+    : "Wheat & Mustard";
+
+  const altCrops = isWarm
+    ? ["Pigeon Pea (Tur)", "Groundnut", "Chickpea (Gram)"]
+    : ["Barley", "Green Peas", "Lentil (Masoor)"];
+
+  return {
+    city: weather.city,
+    temperature: weather.temperature,
+    humidity: weather.humidity,
+    windSpeed: weather.windSpeed,
+    pressure: weather.pressure,
+    rainProbability: weather.rainProbability,
+    weatherCondition: weather.condition,
+    soilHealthScore: "88/100 (Optimal Soil Fertility)",
+    bestCrop,
+    alternativeCrops: altCrops,
+    irrigationRecommendation:
+      weather.rainProbability > 50
+        ? "Pause artificial irrigation. Rely on natural precipitation and inspect field drainage channels."
+        : `Drip irrigation for 40 minutes during early morning hours to minimize evaporation losses under ${weather.windSpeed} km/h wind conditions.`,
+    fertilizerRecommendation:
+      "Apply NPK 10-26-26 @ 50 kg/acre as basal dose + Neem-coated Urea @ 25 kg/acre at 30 days + Zinc Sulfate 5 kg/acre.",
+    diseaseRiskLevel: isHumid && weather.temperature > 26 ? "Medium" : "Low",
+    farmingTips: [
+      "Perform soil testing for pH and organic carbon content prior to sowing",
+      "Incorporate bio-fertilizers (Azotobacter & PSB) with FYM during field preparation",
+      "Ensure proper ridge and furrow planting to avoid waterlogging near root zones"
+    ],
+    explanations: {
+      cropChoice: `Regional temperature of ${weather.temperature}°C combined with ${weather.humidity}% humidity creates an ideal thermal and moisture envelope for ${bestCrop}.`,
+      irrigation: `With rain probability of ${weather.rainProbability}% and atmospheric pressure at ${weather.pressure} hPa, evaporative demand is moderate, favoring controlled drip application.`,
+      fertilizer: `Balanced NPK 10-26-26 provides essential Phosphorus for deep root establishment while Zinc supplementation prevents chlorosis in regional soil types.`
+    }
   };
 }
