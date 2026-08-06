@@ -72,12 +72,12 @@ export const Navbar: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="hidden sm:flex items-center gap-3">
-          <Link href="/(dashboard)">
+          <Link href="/sign-in">
             <Button variant="ghost" size="sm" className="text-slate-700 hover:text-emerald-700">
               Login
             </Button>
           </Link>
-          <Link href="/(dashboard)">
+          <Link href="/sign-up">
             <Button
               variant="emerald"
               size="sm"
@@ -120,12 +120,12 @@ export const Navbar: React.FC = () => {
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
-              <Link href="/(dashboard)" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="outline" className="w-full justify-center">
                   Login
                 </Button>
               </Link>
-              <Link href="/(dashboard)" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="emerald" className="w-full justify-center">
                   Get Started Free
                 </Button>

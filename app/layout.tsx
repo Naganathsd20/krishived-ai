@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { APP_CONFIG } from "@/lib/constants";
 
@@ -33,10 +34,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={plusJakarta.variable}>
-      <body className="font-sans bg-[#f8faf9] text-slate-900 antialiased min-h-screen selection:bg-emerald-500 selection:text-white mesh-bg">
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className={plusJakarta.variable}>
+        <body className="font-sans bg-[#f8faf9] text-slate-900 antialiased min-h-screen selection:bg-emerald-500 selection:text-white mesh-bg">
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
+
