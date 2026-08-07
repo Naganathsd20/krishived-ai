@@ -9,6 +9,7 @@ import {
   Settings,
   HelpCircle,
   User,
+  Bot,
   LucideIcon,
 } from "lucide-react";
 
@@ -40,6 +41,12 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
         title: "Overview",
         href: "/dashboard",
         icon: LayoutDashboard,
+      },
+      {
+        title: "KrishiMitra",
+        href: "/ai-assistant",
+        icon: Bot,
+        isNew: true,
       },
       {
         title: "Profile",
