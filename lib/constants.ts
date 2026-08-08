@@ -10,6 +10,7 @@ import {
   HelpCircle,
   User,
   Bot,
+  BarChart3,
   LucideIcon,
 } from "lucide-react";
 
@@ -75,6 +76,12 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
   {
     label: "Analytics & Reports",
     items: [
+      {
+        title: "Analytics",
+        href: "/analytics",
+        icon: BarChart3,
+        isNew: true,
+      },
       {
         title: "Yield Intelligence",
         href: "#",

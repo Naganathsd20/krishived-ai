@@ -593,7 +593,7 @@ export default function WeatherSoilPage() {
                           leftIcon={<Eye className="w-4 h-4 text-emerald-600" />}
                           className="hover:bg-emerald-50 hover:border-emerald-300 text-xs font-semibold"
                         >
-                          👁 View Details
+                          View Details
                         </Button>
 
                         <Button
@@ -604,7 +604,7 @@ export default function WeatherSoilPage() {
                           leftIcon={<Trash2 className="w-4 h-4" />}
                           className="text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-xs font-semibold transition-all hover:scale-105"
                         >
-                          🗑 Delete
+                          Delete
                         </Button>
                       </div>
                     </div>
