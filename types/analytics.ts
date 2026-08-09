@@ -38,6 +38,16 @@ export interface IDiseaseBreakdownItem {
   severity: "Healthy" | "High" | "Medium" | "Low";
 }
 
+export interface IRecentDiseaseScan {
+  id: string;
+  disease: string;
+  severity: "Healthy" | "High" | "Medium" | "Low";
+  confidence: string;
+  imageUrl?: string;
+  timestamp: string;
+  createdAtISO: string;
+}
+
 export interface IDiseaseAnalyticsData {
   totalAnalyses: number;
   healthyCount: number;
@@ -46,6 +56,7 @@ export interface IDiseaseAnalyticsData {
   diseaseDetectedPercentage: number;
   highestDetectedDisease: string;
   breakdown: IDiseaseBreakdownItem[];
+  recentDiseaseScans?: IRecentDiseaseScan[];
 }
 
 export interface IWeatherTrendItem {

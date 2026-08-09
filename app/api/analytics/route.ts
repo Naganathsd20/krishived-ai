@@ -370,6 +370,15 @@ export async function GET() {
         diseaseDetectedPercentage,
         highestDetectedDisease,
         breakdown: diseaseBreakdownItems,
+        recentDiseaseScans: diseaseAnalyses.slice(0, 5).map((item: any) => ({
+          id: item._id.toString(),
+          disease: item.disease,
+          severity: item.severity || "Medium",
+          confidence: item.confidence || "90%",
+          imageUrl: item.imageUrl || "",
+          timestamp: formatRelativeTime(item.createdAt),
+          createdAtISO: new Date(item.createdAt).toISOString(),
+        })),
       },
       weatherAnalytics: {
         hasData: soilRecommendations.length > 0,

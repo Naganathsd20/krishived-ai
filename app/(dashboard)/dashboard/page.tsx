@@ -2,23 +2,26 @@
 
 import React, { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Sprout,
   BrainCircuit,
   TrendingUp,
   CloudSun,
   Sparkles,
-  Plus,
   ArrowUpRight,
-  Search,
-  Mail,
-  Lock,
-  Layers,
-  CheckCircle2,
-  AlertTriangle,
   User as UserIcon,
   Globe,
   Shield,
+  Bot,
+  BarChart3,
+  RefreshCw,
+  ArrowRight,
+  AlertTriangle,
+  CheckCircle2,
+  Activity,
+  FileText,
 } from "lucide-react";
 import {
   PageContainer,
@@ -33,9 +36,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Modal } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonCard, Spinner } from "@/components/ui/loading";
 
@@ -49,36 +50,161 @@ interface MongoUserProfile {
   language: string;
 }
 
+interface AnalyticsData {
+  farmHealth: {
+    hasEnoughData: boolean;
+    overallScore: number | null;
+    status: string;
+    breakdown: {
+      cropHealthScore: number;
+      soilHealthScore: number;
+      diseaseRiskScore: number;
+      weatherStabilityScore: number;
+      irrigationScore: number;
+    } | null;
+  };
+  stats: {
+    cropReportsCount: number;
+    diseaseAnalysesCount: number;
+    weatherChecksCount: number;
+    conversationsCount: number;
+    soilRecommendationsCount: number;
+  };
+  cropHealth: {
+    healthyCount: number;
+    healthyPercentage: number;
+    moderateRiskCount: number;
+    moderateRiskPercentage: number;
+    highRiskCount: number;
+    highRiskPercentage: number;
+    totalFieldsAnalyzed: number;
+  };
+  diseaseAnalytics: {
+    totalAnalyses: number;
+    healthyCount: number;
+    healthyPercentage: number;
+    diseaseDetectedCount: number;
+    diseaseDetectedPercentage: number;
+    highestDetectedDisease: string;
+    breakdown: Array<{ name: string; count: number; percentage: number; severity: string }>;
+    recentDiseaseScans?: Array<{
+      id: string;
+      disease: string;
+      severity: string;
+      confidence: string;
+      imageUrl?: string;
+      timestamp: string;
+      createdAtISO: string;
+    }>;
+  };
+  weatherAnalytics: {
+    hasData: boolean;
+    avgTemperature: number | null;
+    avgHumidity: number | null;
+    avgRainProbability: number | null;
+    weatherChecksCount: number;
+    recentCity: string | null;
+    trend: Array<{ day: string; dateStr: string; temp: number; humidity: number; rainProb: number; city: string }>;
+  };
+  soilCropInsights: {
+    hasData: boolean;
+    mostRecommendedCrop: string;
+    averageSoilScore: string;
+    mostCommonFertilizer: string;
+    irrigationRecommendation: string;
+  };
+  aiInsights: string[];
+  recentActivities: Array<{
+    id: string;
+    type: "disease" | "soil" | "chat";
+    title: string;
+    subtitle: string;
+    timestamp: string;
+    createdAtISO: string;
+  }>;
+}
+
+function sanitizeErrorMessage(rawMsg?: string): string {
+  if (!rawMsg) return "Unable to load farm analytics. Please try again.";
+  if (
+    rawMsg.includes("Mongo") ||
+    rawMsg.includes("ECONNREFUSED") ||
+    rawMsg.includes("connect") ||
+    rawMsg.includes("Atlas") ||
+    rawMsg.includes("URI") ||
+    rawMsg.includes("localhost")
+  ) {
+    return "Unable to connect to farm service. Please try again.";
+  }
+  return rawMsg;
+}
+
 export default function OverviewPage() {
+  const router = useRouter();
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
   const [dbUser, setDbUser] = useState<MongoUserProfile | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [demoInput, setDemoInput] = useState("");
-  const [inputError, setInputError] = useState("");
-  const [isLoadingDemo, setIsLoadingDemo] = useState(false);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [userError, setUserError] = useState<string | null>(null);
+
+  const fetchDashboardData = React.useCallback(async () => {
+    setLoading(true);
+    setAnalyticsError(null);
+    setUserError(null);
+    try {
+      const timestamp = Date.now();
+      const fetchOpts: RequestInit = {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      };
+
+      const [userRes, analyticsRes] = await Promise.all([
+        fetch(`/api/user/me?t=${timestamp}`, fetchOpts),
+        fetch(`/api/analytics?t=${timestamp}`, fetchOpts),
+      ]);
+
+      // 1. Process User Profile Response
+      if (userRes.ok) {
+        const userData = await userRes.json().catch(() => null);
+        if (userData?.success) {
+          setDbUser(userData.user);
+        } else {
+          setUserError("Profile sync paused");
+        }
+      } else {
+        setUserError("Profile sync paused");
+      }
+
+      // 2. Process Analytics Response
+      const analyticsData = await analyticsRes.json().catch(() => null);
+
+      if (analyticsRes.ok && analyticsData?.success) {
+        setAnalytics(analyticsData);
+      } else {
+        const rawError = analyticsData?.error;
+        const sanitizedMsg =
+          analyticsRes.status === 401
+            ? "Unauthorized. Please sign in to view dashboard data."
+            : sanitizeErrorMessage(rawError);
+        setAnalyticsError(sanitizedMsg);
+      }
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      setAnalyticsError("An unexpected error occurred while loading your dashboard data.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function syncAndFetchUser() {
-      try {
-        const res = await fetch("/api/user/me");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success) {
-            setDbUser(data.user);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch synced user:", err);
-      } finally {
-        setLoadingUser(false);
-      }
-    }
-
     if (isClerkLoaded) {
-      syncAndFetchUser();
+      fetchDashboardData();
     }
-  }, [isClerkLoaded]);
+  }, [isClerkLoaded, clerkUser, fetchDashboardData]);
 
   const displayName =
     dbUser?.name ||
@@ -86,50 +212,69 @@ export default function OverviewPage() {
     clerkUser?.firstName ||
     "Farmer";
 
-  const handleTestSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!demoInput.trim()) {
-      setInputError("Field name is required for validation test.");
-      return;
-    }
-    setInputError("");
-    setIsLoadingDemo(true);
-    setTimeout(() => {
-      setIsLoadingDemo(false);
-      alert(`Validation Successful! Input value: "${demoInput}"`);
-    }, 800);
-  };
+  const diseaseActivities =
+    analytics?.diseaseAnalytics?.recentDiseaseScans &&
+    analytics.diseaseAnalytics.recentDiseaseScans.length > 0
+      ? analytics.diseaseAnalytics.recentDiseaseScans.map((d) => ({
+          id: d.id,
+          title: "Disease analysis completed",
+          subtitle: `${d.disease} • Severity: ${d.severity}`,
+          timestamp: d.timestamp,
+        }))
+      : analytics?.recentActivities?.filter((a) => a.type === "disease") || [];
 
   return (
     <PageContainer>
       {/* Page Header */}
       <PageHeader
         title={`👋 Welcome ${displayName}`}
-        description="Welcome to KrishiVed AI — Real-time smart agricultural intelligence, AI crop advisory, and farm telemetry analytics."
+        description="Real-time smart agricultural intelligence, crop health telemetry, and AI advisory overview."
         badge={
           <Badge variant="emerald" dot>
             Authenticated Farmer Dashboard
           </Badge>
         }
         action={
-          <Button
-            variant="emerald"
-            leftIcon={<Sparkles className="w-4 h-4" />}
-            onClick={() => setIsModalOpen(true)}
-          >
-            Launch Modal Demo
-          </Button>
+          <Link href="/ai-assistant">
+            <Button variant="emerald" leftIcon={<Bot className="w-4 h-4" />}>
+              Ask KrishiMitra
+            </Button>
+          </Link>
         }
       />
 
-      {/* User Profile Card */}
+      {/* Analytics Service Failure Banner with Retry */}
+      {analyticsError && (
+        <Card variant="glass" className="border-rose-200 bg-rose-50/50 mb-6">
+          <CardContent className="p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+              <div>
+                <h4 className="text-sm font-bold text-rose-900">Analytics Service Issue</h4>
+                <p className="text-xs text-rose-700">{analyticsError}</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchDashboardData}
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+              className="border-rose-300 text-rose-800 hover:bg-rose-100 shrink-0"
+            >
+              Retry Sync
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Farmer Profile Card */}
       <div className="mb-8">
         <Card variant="glass" className="border-emerald-200/80 shadow-md">
-          {loadingUser ? (
+          {loading && !dbUser && !clerkUser ? (
             <div className="p-6 flex items-center justify-center gap-3">
               <Spinner size="md" />
               <span className="text-sm font-medium text-slate-600">
-                Synchronizing user profile with MongoDB...
+                Synchronizing user profile...
               </span>
             </div>
           ) : (
@@ -163,9 +308,6 @@ export default function OverviewPage() {
                       {dbUser?.email || clerkUser?.primaryEmailAddress?.emailAddress}
                     </p>
                   </div>
-                  <Badge variant="glass" className="self-center md:self-start">
-                    MongoDB Synced
-                  </Badge>
                 </div>
 
                 {/* Profile Meta Grid */}
@@ -218,296 +360,410 @@ export default function OverviewPage() {
         </Card>
       </div>
 
-      {/* Top Telemetry KPI Cards */}
+      {/* Real KPI Cards */}
       <GridContainer cols={4}>
+        {/* KPI 1: Total Disease Scans */}
         <Card variant="glass" hoverEffect>
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Active Advisory Models
+              Total Disease Scans
             </span>
             <div className="w-9 h-9 rounded-2xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center">
-              <Sprout className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900">24/7</span>
-            <span className="text-xs font-semibold text-emerald-600 flex items-center">
-              +100% Ready <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-2">
-            Ready for Gemini AI advisory pipeline integration
-          </p>
-        </Card>
-
-        <Card variant="glass" hoverEffect>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Diagnostic Precision
-            </span>
-            <div className="w-9 h-9 rounded-2xl bg-teal-100/80 text-teal-700 flex items-center justify-center">
               <BrainCircuit className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900">99.4%</span>
-            <span className="text-xs font-semibold text-emerald-600 flex items-center">
-              Target <CheckCircle2 className="w-3.5 h-3.5 ml-0.5" />
-            </span>
-          </div>
+          {loading ? (
+            <div className="h-9 w-24 bg-slate-200/60 rounded-lg animate-pulse my-1" />
+          ) : (
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-slate-900">
+                {analytics?.stats?.diseaseAnalysesCount ?? 0}
+              </span>
+              <Badge variant="emerald" className="text-[10px]">
+                {analytics?.diseaseAnalytics?.diseaseDetectedCount
+                  ? `${analytics.diseaseAnalytics.diseaseDetectedCount} Detected`
+                  : "All Clear"}
+              </Badge>
+            </div>
+          )}
           <p className="text-xs text-slate-400 mt-2">
-            Custom vision & multi-modal pest analysis engine
+            Crop diagnostics performed by AI vision engine
           </p>
         </Card>
 
+        {/* KPI 2: Healthy Crop Rate */}
         <Card variant="glass" hoverEffect>
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Soil Telemetry Nodes
+              Healthy Crop Rate
+            </span>
+            <div className="w-9 h-9 rounded-2xl bg-teal-100/80 text-teal-700 flex items-center justify-center">
+              <Sprout className="w-5 h-5" />
+            </div>
+          </div>
+          {loading ? (
+            <div className="h-9 w-24 bg-slate-200/60 rounded-lg animate-pulse my-1" />
+          ) : (
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-slate-900">
+                {analytics?.cropHealth?.healthyPercentage ?? 0}%
+              </span>
+              <Badge variant="info" className="text-[10px]">
+                {analytics?.cropHealth?.healthyCount ?? 0} Healthy Scans
+              </Badge>
+            </div>
+          )}
+          <p className="text-xs text-slate-400 mt-2">
+            Percentage of diagnosed crops free of disease
+          </p>
+        </Card>
+
+        {/* KPI 3: Saved Soil Recommendations */}
+        <Card variant="glass" hoverEffect>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Saved Soil Advisories
             </span>
             <div className="w-9 h-9 rounded-2xl bg-amber-100/80 text-amber-700 flex items-center justify-center">
               <CloudSun className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900">1,280</span>
-            <Badge variant="warning" className="text-[10px]">
-              Simulated
-            </Badge>
-          </div>
+          {loading ? (
+            <div className="h-9 w-24 bg-slate-200/60 rounded-lg animate-pulse my-1" />
+          ) : (
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-slate-900">
+                {analytics?.stats?.soilRecommendationsCount ?? 0}
+              </span>
+              <Badge variant="warning" className="text-[10px]">
+                {analytics?.soilCropInsights?.hasData
+                  ? `Top: ${analytics.soilCropInsights.mostRecommendedCrop}`
+                  : "No Saved Tests"}
+              </Badge>
+            </div>
+          )}
           <p className="text-xs text-slate-400 mt-2">
-            Micro-climate telemetry stream ready for MongoDB
+            Soil health tests & NPK fertilizer recommendations
           </p>
         </Card>
 
+        {/* KPI 4: Farm Health Score */}
         <Card variant="gradient" hoverEffect>
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Architecture Score
+              Farm Health Score
             </span>
             <div className="w-9 h-9 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
               <TrendingUp className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900">100/100</span>
-          </div>
+          {loading ? (
+            <div className="h-9 w-24 bg-slate-200/60 rounded-lg animate-pulse my-1" />
+          ) : (
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-slate-900">
+                {analytics?.farmHealth?.overallScore !== null &&
+                analytics?.farmHealth?.overallScore !== undefined
+                  ? `${analytics.farmHealth.overallScore}/100`
+                  : "N/A"}
+              </span>
+            </div>
+          )}
           <p className="text-xs text-emerald-700 font-medium mt-2">
-            Strict Next.js 15 App Router & TypeScript
+            Status: {analytics?.farmHealth?.status || "Insufficient data"}
           </p>
         </Card>
       </GridContainer>
 
-      {/* Component Suite Showcases */}
-      <div className="space-y-8 pt-4">
-        {/* Section 1: Button Variants & Sizes */}
-        <Card variant="glass" hoverEffect={false}>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-emerald-600" />
-              <CardTitle>Reusable Button Design System</CardTitle>
-            </div>
-            <CardDescription>
-              Flexible multi-variant buttons with Framer Motion hover/tap spring feedback.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                Variants
-              </h5>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button variant="default">Default Emerald</Button>
-                <Button variant="emerald" leftIcon={<Sparkles className="w-4 h-4" />}>
-                  Gradient Glow
-                </Button>
-                <Button variant="outline">Outline Glass</Button>
-                <Button variant="glass">Glass Pill</Button>
-                <Button variant="ghost">Ghost Style</Button>
-                <Button variant="danger">Danger Action</Button>
+      {/* Quick Actions Launcher */}
+      <div className="pt-2">
+        <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-emerald-600" />
+          Quick Actions Launcher
+        </h3>
+        <GridContainer cols={4}>
+          <Link href="/disease-detection" className="group">
+            <Card variant="glass" className="h-full hover:border-emerald-300 transition-all p-5 flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <BrainCircuit className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                  Disease Diagnostics
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Upload leaf photos for instant AI pathogen diagnosis & cure advisories.
+                </p>
               </div>
-            </div>
-
-            <div>
-              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                Sizes & States
-              </h5>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button size="sm" variant="emerald">
-                  Small Button
-                </Button>
-                <Button size="md" variant="emerald">
-                  Medium Button
-                </Button>
-                <Button size="lg" variant="emerald">
-                  Large Hero Button
-                </Button>
-                <Button size="icon" variant="outline">
-                  <Plus className="w-4 h-4" />
-                </Button>
-                <Button variant="emerald" isLoading>
-                  Processing
-                </Button>
-                <Button variant="default" disabled>
-                  Disabled State
-                </Button>
+              <div className="mt-4 flex items-center text-xs font-semibold text-emerald-600 gap-1 group-hover:translate-x-1 transition-transform">
+                Launch Diagnostics <ArrowRight className="w-3.5 h-3.5" />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </Card>
+          </Link>
 
-        {/* Section 2: Form Input Component & Validation */}
-        <GridContainer cols={2}>
+          <Link href="/ai-assistant" className="group">
+            <Card variant="glass" className="h-full hover:border-emerald-300 transition-all p-5 flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-teal-700 transition-colors">
+                  KrishiMitra Copilot
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Chat with multi-lingual AI assistant for personalized crop guidance.
+                </p>
+              </div>
+              <div className="mt-4 flex items-center text-xs font-semibold text-teal-600 gap-1 group-hover:translate-x-1 transition-transform">
+                Open KrishiMitra <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/weather-soil" className="group">
+            <Card variant="glass" className="h-full hover:border-emerald-300 transition-all p-5 flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <CloudSun className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
+                  Weather & Soil
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Real-time weather forecasts, soil health scores & fertilizer recommendations.
+                </p>
+              </div>
+              <div className="mt-4 flex items-center text-xs font-semibold text-amber-600 gap-1 group-hover:translate-x-1 transition-transform">
+                Check Weather & Soil <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/analytics" className="group">
+            <Card variant="glass" className="h-full hover:border-emerald-300 transition-all p-5 flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">
+                  Farm Analytics
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Deep historical trends, disease breakdown graphs & comprehensive reports.
+                </p>
+              </div>
+              <div className="mt-4 flex items-center text-xs font-semibold text-indigo-600 gap-1 group-hover:translate-x-1 transition-transform">
+                View Farm Analytics <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </Card>
+          </Link>
+        </GridContainer>
+      </div>
+
+      {/* Main Content Layout: 2 Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
+        {/* Left Column (2/3 width on desktop) */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Recent Disease Diagnostics Activity */}
+          <Card variant="glass" hoverEffect={false}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BrainCircuit className="w-5 h-5 text-emerald-600" />
+                  Recent Disease Diagnostics
+                </CardTitle>
+                <CardDescription>
+                  Latest leaf scan results & pathogen risk analysis.
+                </CardDescription>
+              </div>
+              <Link href="/disease-detection">
+                <Button variant="ghost" size="sm" className="text-emerald-700">
+                  View All Scans
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  <SkeletonCard />
+                </div>
+              ) : diseaseActivities.length > 0 ? (
+                <div className="divide-y divide-slate-100">
+                  {diseaseActivities.slice(0, 5).map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="py-3 flex items-center justify-between gap-4 first:pt-0 last:pb-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                          <Activity className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h5 className="text-sm font-bold text-slate-800">
+                            {activity.title}
+                          </h5>
+                          <p className="text-xs text-slate-500">{activity.subtitle}</p>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-medium text-slate-400 shrink-0">
+                        {activity.timestamp}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="No Disease Diagnostics Yet"
+                  description="Scan crop leaves with AI to detect diseases early and protect your yield."
+                  icon={<BrainCircuit className="w-8 h-8 text-emerald-600" />}
+                  actionLabel="Start New Diagnostic"
+                  onAction={() => router.push("/disease-detection")}
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* AI Advisory & Engine Highlights */}
           <Card variant="glass" hoverEffect={false}>
             <CardHeader>
-              <CardTitle>Form Inputs & Text Fields</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-emerald-600" />
+                KrishiEngine AI Advisory Highlights
+              </CardTitle>
               <CardDescription>
-                Input components with floating icons, label validation, and focus rings.
+                Smart insights generated from your farm activity and soil telemetry.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleTestSubmit} className="space-y-4">
-                <Input
-                  label="Farm Field Identifier"
-                  placeholder="e.g. Sector-7 North Organic Plot"
-                  value={demoInput}
-                  onChange={(e) => setDemoInput(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />}
-                  error={inputError}
-                  required
-                />
-
-                <Input
-                  label="Agronomist Email Address"
-                  placeholder="agronomist@krishived.ai"
-                  type="email"
-                  leftIcon={<Mail className="w-4 h-4" />}
-                  helperText="Verification notice will be sent via Cloudinary/Clerk flow."
-                />
-
-                <Input
-                  label="API Access Secret Token"
-                  type="password"
-                  placeholder="••••••••••••••••"
-                  leftIcon={<Lock className="w-4 h-4" />}
-                />
-
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    variant="emerald"
-                    className="w-full"
-                    isLoading={isLoadingDemo}
-                  >
-                    Test Input Validation
-                  </Button>
+              {loading ? (
+                <div className="space-y-2">
+                  <div className="h-12 bg-slate-100 rounded-xl animate-pulse" />
+                  <div className="h-12 bg-slate-100 rounded-xl animate-pulse" />
                 </div>
-              </form>
+              ) : analytics?.aiInsights && analytics.aiInsights.length > 0 ? (
+                <div className="space-y-3">
+                  {analytics.aiInsights.map((insight, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/60 flex items-start gap-3"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                        {insight}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
+                  Run your first crop disease scan or soil health check to unlock AI advisory insights.
+                </div>
+              )}
             </CardContent>
           </Card>
+        </div>
 
-          {/* Badges & Status Pill Showcase */}
+        {/* Right Column (1/3 width on desktop) */}
+        <div className="space-y-8">
+          {/* Weather & Soil Telemetry Summary */}
           <Card variant="glass" hoverEffect={false}>
             <CardHeader>
-              <CardTitle>Badges & Status Indicators</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CloudSun className="w-5 h-5 text-amber-600" />
+                Weather & Soil Telemetry
+              </CardTitle>
               <CardDescription>
-                Pill badges for real-time status reporting, categories, and alerts.
+                Current field conditions and saved soil advisories.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                  Status Pills
-                </h5>
-                <div className="flex flex-wrap gap-2.5">
-                  <Badge variant="emerald" dot>
-                    Active Crop Season
-                  </Badge>
-                  <Badge variant="warning" dot>
-                    Pest Threat Detected
-                  </Badge>
-                  <Badge variant="info">Soil Hydro Sync</Badge>
-                  <Badge variant="glass" dot>
-                    Glassmorphic Tag
-                  </Badge>
-                  <Badge variant="danger" dot>
-                    Critical Anomaly
-                  </Badge>
-                  <Badge variant="outline">Default Outline</Badge>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100">
-                <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                  Loading Skeleton Placeholders
-                </h5>
+            <CardContent className="space-y-4">
+              {loading ? (
                 <SkeletonCard />
-              </div>
+              ) : analytics?.weatherAnalytics?.hasData || analytics?.soilCropInsights?.hasData ? (
+                <div className="space-y-4">
+                  {/* Weather Snippet */}
+                  {analytics?.weatherAnalytics?.hasData && (
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-200/80">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-amber-900">
+                          {analytics.weatherAnalytics.recentCity || "Local Region"}
+                        </span>
+                        <Badge variant="warning" className="text-[10px]">
+                          Weather Sync
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                        <div className="bg-white/80 p-2 rounded-xl">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold block">Temp</span>
+                          <span className="text-xs font-extrabold text-slate-800">
+                            {analytics.weatherAnalytics.avgTemperature !== null
+                              ? `${analytics.weatherAnalytics.avgTemperature}°C`
+                              : "N/A"}
+                          </span>
+                        </div>
+                        <div className="bg-white/80 p-2 rounded-xl">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold block">Humidity</span>
+                          <span className="text-xs font-extrabold text-slate-800">
+                            {analytics.weatherAnalytics.avgHumidity !== null
+                              ? `${analytics.weatherAnalytics.avgHumidity}%`
+                              : "N/A"}
+                          </span>
+                        </div>
+                        <div className="bg-white/80 p-2 rounded-xl">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold block">Rain</span>
+                          <span className="text-xs font-extrabold text-slate-800">
+                            {analytics.weatherAnalytics.avgRainProbability !== null
+                              ? `${analytics.weatherAnalytics.avgRainProbability}%`
+                              : "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Soil Snippet */}
+                  {analytics?.soilCropInsights?.hasData && (
+                    <div className="p-4 rounded-2xl bg-white/80 border border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700">Top Crop Choice</span>
+                        <span className="text-xs font-extrabold text-emerald-700">
+                          {analytics.soilCropInsights.mostRecommendedCrop}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                        <span className="text-xs font-bold text-slate-700">Soil Health Score</span>
+                        <span className="text-xs font-extrabold text-slate-800">
+                          {analytics.soilCropInsights.averageSoilScore}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                        <span className="text-xs font-bold text-slate-700">Recommended Fertilizer</span>
+                        <span className="text-xs font-semibold text-slate-600 text-right max-w-[140px] truncate">
+                          {analytics.soilCropInsights.mostCommonFertilizer}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <Link href="/weather-soil" className="block pt-1">
+                    <Button variant="outline" size="sm" className="w-full">
+                      Full Weather & Soil Telemetry
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <EmptyState
+                  title="No Weather or Soil Telemetry"
+                  description="Check local weather forecasts or test soil health to generate telemetry."
+                  icon={<CloudSun className="w-8 h-8 text-amber-600" />}
+                  actionLabel="Check Weather & Soil"
+                  onAction={() => router.push("/weather-soil")}
+                />
+              )}
             </CardContent>
           </Card>
-        </GridContainer>
-
-        {/* Section 3: Empty State Component Showcase */}
-        <Card variant="glass" hoverEffect={false}>
-          <CardHeader>
-            <CardTitle>Empty State Component</CardTitle>
-            <CardDescription>
-              Clean placeholder interface for empty lists, search results, or pending data loading.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EmptyState
-              title="No Soil Telemetry Logs Found"
-              description="Connect a physical IoT node or generate simulated telemetry data to begin monitoring soil pH, moisture, and NPK levels."
-              icon={<Sprout className="w-8 h-8" />}
-              actionLabel="Simulate Sensor Data"
-              onAction={() => alert("Simulation trigger ready for backend!")}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Modal Dialog Component Showcase */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="KrishiVed AI Platform Foundation"
-        description="Modular architecture initialized for scalable development."
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
-              Close
-            </Button>
-            <Button variant="emerald" onClick={() => setIsModalOpen(false)}>
-              Acknowledge & Proceed
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
-          <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            <div>
-              <h5 className="font-bold text-emerald-950">
-                Foundation Architecture Active
-              </h5>
-              <p className="text-xs text-emerald-800/90 mt-0.5">
-                The folder structure, atomic UI primitives, Tailwind green glass design system, and responsive layout are fully configured.
-              </p>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <h5 className="font-bold text-amber-950">Backend & AI Isolated</h5>
-              <p className="text-xs text-amber-800/90 mt-0.5">
-                As instructed, MongoDB, Gemini AI, Clerk Auth, and Cloudinary backends are postponed for future development phases.
-              </p>
-            </div>
-          </div>
         </div>
-      </Modal>
+      </div>
     </PageContainer>
   );
 }
