@@ -39,6 +39,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonCard, Spinner } from "@/components/ui/loading";
+import { SmartFarmIntelligenceCard } from "@/components/dashboard/SmartFarmIntelligenceCard";
 
 interface MongoUserProfile {
   _id: string;
@@ -360,7 +361,11 @@ export default function OverviewPage() {
         </Card>
       </div>
 
+      {/* Smart Farm Intelligence Card */}
+      <SmartFarmIntelligenceCard />
+
       {/* Real KPI Cards */}
+
       <GridContainer cols={4}>
         {/* KPI 1: Total Disease Scans */}
         <Card variant="glass" hoverEffect>
