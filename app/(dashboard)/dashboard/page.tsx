@@ -202,7 +202,7 @@ export default function OverviewPage() {
   }, []);
 
   useEffect(() => {
-    if (isClerkLoaded) {
+    if (isClerkLoaded && clerkUser) {
       fetchDashboardData();
     }
   }, [isClerkLoaded, clerkUser, fetchDashboardData]);

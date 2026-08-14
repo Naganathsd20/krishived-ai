@@ -22,15 +22,6 @@ if (!global.mongooseCache) {
  * to prevent duplicate database connections in Next.js development mode.
  */
 export async function connectDB(): Promise<typeof mongoose> {
-  // Fix for Windows DNS resolution of MongoDB Atlas SRV (_mongodb._tcp) records
-  if (typeof window === "undefined") {
-    try {
-      dns.setServers(["8.8.8.8", "1.1.1.1"]);
-    } catch {
-      // Ignore if environment disallows setting custom DNS servers
-    }
-  }
-
   const MONGODB_URI = process.env.MONGODB_URI;
 
   if (!MONGODB_URI) {
@@ -44,19 +35,34 @@ export async function connectDB(): Promise<typeof mongoose> {
   }
 
   if (!cached.promise) {
-    const opts = {
+    const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-      return mongooseInstance;
-    });
+    cached.promise = (async () => {
+      try {
+        return await mongoose.connect(MONGODB_URI, opts);
+      } catch (firstErr) {
+        // Fallback for Windows DNS resolution of MongoDB Atlas SRV (_mongodb._tcp) records
+        if (typeof window === "undefined") {
+          try {
+            dns.setServers(["8.8.8.8", "1.1.1.1"]);
+          } catch {
+            // Ignore DNS override errors
+          }
+        }
+        return await mongoose.connect(MONGODB_URI, opts);
+      }
+    })();
   }
 
   try {
     cached.conn = await cached.promise;
   } catch (error) {
     cached.promise = null;
+    cached.conn = null;
     throw error;
   }
 

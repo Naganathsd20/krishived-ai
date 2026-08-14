@@ -42,6 +42,12 @@ export default function OverviewPage() {
   const [demoInput, setDemoInput] = useState("");
   const [inputError, setInputError] = useState("");
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 4000);
+  };
 
   const handleTestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +59,7 @@ export default function OverviewPage() {
     setIsLoadingDemo(true);
     setTimeout(() => {
       setIsLoadingDemo(false);
-      alert(`Validation Successful! Input value: "${demoInput}"`);
+      showToast(`Validation Successful! Input value: "${demoInput}"`);
     }, 800);
   };
 
@@ -322,7 +328,7 @@ export default function OverviewPage() {
               description="Connect a physical IoT node or generate simulated telemetry data to begin monitoring soil pH, moisture, and NPK levels."
               icon={<Sprout className="w-8 h-8" />}
               actionLabel="Simulate Sensor Data"
-              onAction={() => alert("Simulation trigger ready for backend!")}
+              onAction={() => showToast("Simulation trigger ready for backend!")}
             />
           </CardContent>
         </Card>

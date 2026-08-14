@@ -2,7 +2,15 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, RefreshCw, Loader2, AlertCircle } from "lucide-react";
+import {
+  BarChart3,
+  RefreshCw,
+  Loader2,
+  AlertCircle,
+  Download,
+  FileSpreadsheet,
+  CheckCircle2,
+} from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/container";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,12 +24,21 @@ import { SoilCropInsightsCard } from "@/components/analytics/SoilCropInsightsCar
 import { AIFarmInsightsCard } from "@/components/analytics/AIFarmInsightsCard";
 import { RecentActivityList } from "@/components/analytics/RecentActivityList";
 import { IAnalyticsResponse } from "@/types/analytics";
+import { jsPDF } from "jspdf";
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<IAnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isExportingPDF, setIsExportingPDF] = useState<boolean>(false);
+  const [isExportingCSV, setIsExportingCSV] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 4000);
+  };
 
   const fetchAnalyticsData = useCallback(async (isManual = false) => {
     if (isManual) {
@@ -32,7 +49,6 @@ export default function AnalyticsPage() {
     setErrorMsg(null);
 
     try {
-      // Append cache-busting timestamp parameter & no-store headers to ensure fresh MongoDB fetch
       const res = await fetch(`/api/analytics?t=${Date.now()}`, {
         cache: "no-store",
         headers: {
@@ -62,8 +78,400 @@ export default function AnalyticsPage() {
     fetchAnalyticsData(false);
   }, []);
 
+  // --------------------------------------------------------------------------
+  // CSV EXPORT GENERATOR
+  // --------------------------------------------------------------------------
+  const handleExportCSV = () => {
+    if (!data) return;
+    setIsExportingCSV(true);
+    try {
+      const rows: string[][] = [];
+
+      const escapeCSV = (str: string) => {
+        if (!str) return '""';
+        return `"${str.replace(/"/g, '""')}"`;
+      };
+
+      const dateStr = new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      // Header Metadata
+      rows.push(["KRISHIVED AI - FARM ANALYTICS REPORT"]);
+      rows.push(["Generated Date", dateStr]);
+      rows.push([""]);
+
+      // Section 1: Farm Health Overview
+      rows.push(["--- 1. FARM HEALTH OVERVIEW ---"]);
+      rows.push([
+        "Farm Health Score",
+        data.farmHealth?.overallScore !== null && data.farmHealth?.overallScore !== undefined
+          ? `${data.farmHealth.overallScore}/100`
+          : "N/A",
+      ]);
+      rows.push(["Health Status", data.farmHealth?.status || "N/A"]);
+      if (data.farmHealth?.breakdown) {
+        rows.push(["Crop Health Component", `${data.farmHealth.breakdown.cropHealthScore}/100`]);
+        rows.push(["Soil Health Component", `${data.farmHealth.breakdown.soilHealthScore}/100`]);
+        rows.push(["Disease Risk Component", `${data.farmHealth.breakdown.diseaseRiskScore}/100`]);
+        rows.push(["Weather Stability Component", `${data.farmHealth.breakdown.weatherStabilityScore}/100`]);
+        rows.push(["Irrigation Component", `${data.farmHealth.breakdown.irrigationScore}/100`]);
+      }
+      rows.push([""]);
+
+      // Section 2: Key Statistics
+      rows.push(["--- 2. KEY STATISTICS ---"]);
+      rows.push(["Total Crop Diagnostics Scans", String(data.stats?.diseaseAnalysesCount ?? "N/A")]);
+      rows.push(["Saved Soil Recommendations", String(data.stats?.soilRecommendationsCount ?? "N/A")]);
+      rows.push(["Weather Telemetry Checks", String(data.stats?.weatherChecksCount ?? "N/A")]);
+      rows.push(["KrishiMitra AI Conversations", String(data.stats?.conversationsCount ?? "N/A")]);
+      rows.push(["Crop Health Scans", String(data.stats?.cropReportsCount ?? "N/A")]);
+      rows.push([""]);
+
+      // Section 3: Crop Health Distribution
+      rows.push(["--- 3. CROP HEALTH DISTRIBUTION ---"]);
+      rows.push(["Healthy Crop Count", String(data.cropHealth?.healthyCount ?? "N/A")]);
+      rows.push(["Healthy Crop Rate", `${data.cropHealth?.healthyPercentage ?? 0}%`]);
+      rows.push(["Moderate Risk Count", String(data.cropHealth?.moderateRiskCount ?? "N/A")]);
+      rows.push(["Moderate Risk Rate", `${data.cropHealth?.moderateRiskPercentage ?? 0}%`]);
+      rows.push(["High Risk Count", String(data.cropHealth?.highRiskCount ?? "N/A")]);
+      rows.push(["High Risk Rate", `${data.cropHealth?.highRiskPercentage ?? 0}%`]);
+      rows.push(["Total Fields Analyzed", String(data.cropHealth?.totalFieldsAnalyzed ?? "N/A")]);
+      rows.push([""]);
+
+      // Section 4: Disease Analytics
+      rows.push(["--- 4. DISEASE DIAGNOSTICS ANALYTICS ---"]);
+      rows.push(["Total Disease Scans", String(data.diseaseAnalytics?.totalAnalyses ?? "N/A")]);
+      rows.push(["Healthy Scans Count", String(data.diseaseAnalytics?.healthyCount ?? "N/A")]);
+      rows.push(["Disease Detected Count", String(data.diseaseAnalytics?.diseaseDetectedCount ?? "N/A")]);
+      rows.push(["Highest Detected Disease", escapeCSV(data.diseaseAnalytics?.highestDetectedDisease || "None Detected")]);
+      if (data.diseaseAnalytics?.breakdown && data.diseaseAnalytics.breakdown.length > 0) {
+        rows.push(["Disease Breakdown:"]);
+        rows.push(["Disease Name", "Count", "Percentage", "Severity"]);
+        data.diseaseAnalytics.breakdown.forEach((item) => {
+          rows.push([
+            escapeCSV(item.name),
+            String(item.count),
+            `${item.percentage}%`,
+            item.severity,
+          ]);
+        });
+      }
+      rows.push([""]);
+
+      // Section 5: Weather Analytics
+      rows.push(["--- 5. WEATHER TELEMETRY ANALYTICS ---"]);
+      rows.push(["Recent City", escapeCSV(data.weatherAnalytics?.recentCity || "N/A")]);
+      rows.push([
+        "Average Temperature",
+        data.weatherAnalytics?.avgTemperature !== null ? `${data.weatherAnalytics.avgTemperature}°C` : "N/A",
+      ]);
+      rows.push([
+        "Average Relative Humidity",
+        data.weatherAnalytics?.avgHumidity !== null ? `${data.weatherAnalytics.avgHumidity}%` : "N/A",
+      ]);
+      rows.push([
+        "Average Rain Probability",
+        data.weatherAnalytics?.avgRainProbability !== null ? `${data.weatherAnalytics.avgRainProbability}%` : "N/A",
+      ]);
+      rows.push([""]);
+
+      // Section 6: Soil & Crop Insights
+      rows.push(["--- 6. SOIL & CROP INSIGHTS ---"]);
+      rows.push(["Most Recommended Crop", escapeCSV(data.soilCropInsights?.mostRecommendedCrop || "N/A")]);
+      rows.push(["Average Soil Health Score", escapeCSV(data.soilCropInsights?.averageSoilScore || "N/A")]);
+      rows.push(["Most Common NPK Fertilizer", escapeCSV(data.soilCropInsights?.mostCommonFertilizer || "N/A")]);
+      rows.push(["Irrigation Recommendation", escapeCSV(data.soilCropInsights?.irrigationRecommendation || "N/A")]);
+      rows.push([""]);
+
+      // Section 7: Smart AI Farm Insights
+      rows.push(["--- 7. SMART AI FARM INSIGHTS ---"]);
+      if (data.aiInsights && data.aiInsights.length > 0) {
+        data.aiInsights.forEach((insight, idx) => {
+          rows.push([`Insight ${idx + 1}`, escapeCSV(insight)]);
+        });
+      } else {
+        rows.push(["Info", "No active AI farm insights."]);
+      }
+      rows.push([""]);
+
+      // Section 8: Recent Activity Log
+      rows.push(["--- 8. RECENT ACTIVITY LOG ---"]);
+      rows.push(["Date/Time", "Activity Title", "Details"]);
+      if (data.recentActivities && data.recentActivities.length > 0) {
+        data.recentActivities.forEach((act) => {
+          rows.push([act.timestamp, escapeCSV(act.title), escapeCSV(act.subtitle)]);
+        });
+      } else {
+        rows.push(["N/A", "No recent activity logged.", "-"]);
+      }
+
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map((e) => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute(
+        "download",
+        `KrishiVed_Farm_Analytics_${new Date().toISOString().split("T")[0]}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast("✅ CSV Farm Analytics report exported successfully.");
+    } catch (err) {
+      console.error("CSV Export Error:", err);
+      showToast("❌ Unable to generate your report. Please try again.");
+    } finally {
+      setIsExportingCSV(false);
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // PDF EXPORT GENERATOR (jsPDF)
+  // --------------------------------------------------------------------------
+  const handleExportPDF = () => {
+    if (!data) return;
+    setIsExportingPDF(true);
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const dateStr = new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      let yPos = 15;
+
+      // Header Banner
+      doc.setFillColor(5, 150, 105); // Emerald 600
+      doc.rect(0, 0, 210, 25, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("KrishiVed AI — Farm Analytics Report", 14, 13);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated Date: ${dateStr}`, 14, 20);
+
+      yPos = 35;
+
+      // 1. Farm Health Overview
+      doc.setTextColor(15, 23, 42);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("1. Farm Health Overview", 14, yPos);
+      yPos += 6;
+
+      doc.setDrawColor(226, 232, 240);
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(14, yPos, 182, 24, 3, 3, "FD");
+
+      const scoreVal =
+        data.farmHealth?.overallScore !== null && data.farmHealth?.overallScore !== undefined
+          ? `${data.farmHealth.overallScore}/100`
+          : "N/A";
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Farm Health Score: ${scoreVal} (${data.farmHealth?.status || "N/A"})`, 18, yPos + 7);
+
+      if (data.farmHealth?.breakdown) {
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          `Crop Health: ${data.farmHealth.breakdown.cropHealthScore} | Soil Health: ${data.farmHealth.breakdown.soilHealthScore} | Disease Risk: ${data.farmHealth.breakdown.diseaseRiskScore}`,
+          18,
+          yPos + 13
+        );
+        doc.text(
+          `Weather Stability: ${data.farmHealth.breakdown.weatherStabilityScore} | Irrigation Index: ${data.farmHealth.breakdown.irrigationScore}`,
+          18,
+          yPos + 19
+        );
+      }
+
+      yPos += 32;
+
+      // 2. Key Statistics
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("2. Key Statistics Summary", 14, yPos);
+      yPos += 6;
+
+      doc.roundedRect(14, yPos, 182, 22, 3, 3, "FD");
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Crop Diagnostics Scans: ${data.stats?.diseaseAnalysesCount ?? "N/A"}`, 18, yPos + 7);
+      doc.text(`Saved Soil Recommendations: ${data.stats?.soilRecommendationsCount ?? "N/A"}`, 18, yPos + 14);
+
+      doc.text(`Weather Telemetry Checks: ${data.stats?.weatherChecksCount ?? "N/A"}`, 110, yPos + 7);
+      doc.text(`KrishiMitra AI Conversations: ${data.stats?.conversationsCount ?? "N/A"}`, 110, yPos + 14);
+
+      yPos += 30;
+
+      // 3. Crop Health Distribution
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("3. Crop Health Distribution", 14, yPos);
+      yPos += 6;
+
+      doc.roundedRect(14, yPos, 182, 20, 3, 3, "FD");
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Healthy Rate: ${data.cropHealth?.healthyPercentage ?? 0}% (${data.cropHealth?.healthyCount ?? 0} Fields)`,
+        18,
+        yPos + 7
+      );
+      doc.text(
+        `Moderate Risk Rate: ${data.cropHealth?.moderateRiskPercentage ?? 0}% (${data.cropHealth?.moderateRiskCount ?? 0} Fields)`,
+        18,
+        yPos + 14
+      );
+
+      doc.text(
+        `High Risk Rate: ${data.cropHealth?.highRiskPercentage ?? 0}% (${data.cropHealth?.highRiskCount ?? 0} Fields)`,
+        110,
+        yPos + 7
+      );
+      doc.text(`Total Analyzed: ${data.cropHealth?.totalFieldsAnalyzed ?? 0}`, 110, yPos + 14);
+
+      yPos += 28;
+
+      // 4. Disease Analytics
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("4. Disease Analytics & Pathogen Trends", 14, yPos);
+      yPos += 6;
+
+      doc.roundedRect(14, yPos, 182, 24, 3, 3, "FD");
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Total Scans: ${data.diseaseAnalytics?.totalAnalyses ?? 0}`, 18, yPos + 7);
+      doc.text(`Healthy Scans: ${data.diseaseAnalytics?.healthyCount ?? 0}`, 18, yPos + 13);
+      doc.text(`Highest Detected: ${data.diseaseAnalytics?.highestDetectedDisease || "None"}`, 18, yPos + 19);
+
+      doc.text(`Disease Detected Count: ${data.diseaseAnalytics?.diseaseDetectedCount ?? 0}`, 110, yPos + 7);
+      doc.text(`Disease Rate: ${data.diseaseAnalytics?.diseaseDetectedPercentage ?? 0}%`, 110, yPos + 13);
+
+      yPos += 32;
+
+      // Page overflow check
+      if (yPos > 240) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      // 5. Weather Analytics & 6. Soil Insights
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("5. Weather Telemetry & Soil Crop Insights", 14, yPos);
+      yPos += 6;
+
+      doc.roundedRect(14, yPos, 182, 30, 3, 3, "FD");
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Location: ${data.weatherAnalytics?.recentCity || "N/A"}`, 18, yPos + 7);
+      doc.text(
+        `Avg Temp: ${data.weatherAnalytics?.avgTemperature !== null ? data.weatherAnalytics.avgTemperature + "°C" : "N/A"}`,
+        18,
+        yPos + 13
+      );
+      doc.text(
+        `Avg Humidity: ${data.weatherAnalytics?.avgHumidity !== null ? data.weatherAnalytics.avgHumidity + "%" : "N/A"}`,
+        18,
+        yPos + 19
+      );
+      doc.text(
+        `Avg Rain Prob: ${data.weatherAnalytics?.avgRainProbability !== null ? data.weatherAnalytics.avgRainProbability + "%" : "N/A"}`,
+        18,
+        yPos + 25
+      );
+
+      doc.text(`Most Recommended Crop: ${data.soilCropInsights?.mostRecommendedCrop || "N/A"}`, 105, yPos + 7);
+      doc.text(`Average Soil Health: ${data.soilCropInsights?.averageSoilScore || "N/A"}`, 105, yPos + 13);
+      doc.text(`NPK Fertilizer: ${data.soilCropInsights?.mostCommonFertilizer || "N/A"}`, 105, yPos + 19);
+
+      yPos += 38;
+
+      // 7. AI Farm Insights
+      if (yPos > 240) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("6. Smart AI Farm Insights", 14, yPos);
+      yPos += 6;
+
+      if (data.aiInsights && data.aiInsights.length > 0) {
+        data.aiInsights.forEach((insight) => {
+          if (yPos > 265) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(14, yPos, 182, 14, 2, 2, "FD");
+
+          doc.setFontSize(8.5);
+          doc.setFont("helvetica", "normal");
+          const splitInsights = doc.splitTextToSize(`• ${insight}`, 174);
+          doc.text(splitInsights, 18, yPos + 6);
+          yPos += 18;
+        });
+      } else {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "italic");
+        doc.text("No AI farm insights currently available.", 18, yPos + 4);
+        yPos += 12;
+      }
+
+      // Footer
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(148, 163, 184);
+        doc.text(`KrishiVed AI Platform • Farm Analytics Certified Report • Page ${i} of ${totalPages}`, 14, 287);
+      }
+
+      doc.save(`KrishiVed_Farm_Analytics_${new Date().toISOString().split("T")[0]}.pdf`);
+      showToast("✅ PDF Farm Analytics report generated & downloaded.");
+    } catch (err) {
+      console.error("PDF Export Error:", err);
+      showToast("❌ Unable to generate your report. Please try again.");
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   return (
     <PageContainer className="space-y-6 pb-12">
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-20 right-6 z-50 px-4 py-3 rounded-2xl bg-slate-900/95 text-white text-xs font-bold shadow-xl border border-slate-700 flex items-center gap-2">
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
       {/* Page Header */}
       <PageHeader
         title="Farm Analytics"
@@ -75,7 +483,29 @@ export default function AnalyticsPage() {
           </Badge>
         }
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={isLoading || isExportingCSV || !data}
+              isLoading={isExportingCSV}
+              leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-600" />}
+              className="border-emerald-200 text-emerald-800 hover:bg-emerald-50 text-xs font-bold"
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={isLoading || isExportingPDF || !data}
+              isLoading={isExportingPDF}
+              leftIcon={<Download className="w-4 h-4 text-emerald-600" />}
+              className="border-emerald-200 text-emerald-800 hover:bg-emerald-50 text-xs font-bold"
+            >
+              Download PDF Report
+            </Button>
             <Button
               variant="emerald"
               size="sm"

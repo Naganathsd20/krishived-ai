@@ -33,7 +33,10 @@ import {
   IFarmActionRecommendation,
 } from "@/types/farm-intelligence";
 
+import { useUser } from "@clerk/nextjs";
+
 export function SmartFarmIntelligenceCard() {
+  const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
   const [data, setData] = useState<IFarmIntelligenceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,8 +72,10 @@ export function SmartFarmIntelligenceCard() {
   }, []);
 
   useEffect(() => {
-    fetchIntelligence();
-  }, [fetchIntelligence]);
+    if (isClerkLoaded && clerkUser) {
+      fetchIntelligence();
+    }
+  }, [isClerkLoaded, clerkUser, fetchIntelligence]);
 
   if (loading) {
     return (

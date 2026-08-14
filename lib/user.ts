@@ -10,6 +10,13 @@ export interface SerializedUser {
   image: string;
   role: string;
   language: string;
+  defaultLocation?: string;
+  defaultCrop?: string;
+  notificationPreferences?: {
+    diseaseAlerts: boolean;
+    weatherAlerts: boolean;
+    soilAdvisories: boolean;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -66,6 +73,13 @@ export async function getOrCreateUser(): Promise<SerializedUser | null> {
         image,
         role: "Farmer",
         language: "English",
+        defaultLocation: "Pune",
+        defaultCrop: "Wheat & Mustard",
+        notificationPreferences: {
+          diseaseAlerts: true,
+          weatherAlerts: true,
+          soilAdvisories: true,
+        },
       });
     } else {
       // 4. Update profile fields if updated in Clerk
@@ -90,6 +104,43 @@ export async function getOrCreateUser(): Promise<SerializedUser | null> {
     return JSON.parse(JSON.stringify(mongoUser));
   } catch (error) {
     console.error("Error in getOrCreateUser sync:", error);
-    throw error;
+    try {
+      const clerkUser = await currentUser();
+      if (clerkUser) {
+        const primaryEmail =
+          clerkUser.emailAddresses?.find(
+            (e) => e.id === clerkUser.primaryEmailAddressId
+          )?.emailAddress ||
+          clerkUser.emailAddresses[0]?.emailAddress ||
+          "";
+
+        const name =
+          [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+          clerkUser.username ||
+          "Farmer";
+
+        return {
+          _id: clerkUser.id,
+          clerkId: clerkUser.id,
+          name,
+          email: primaryEmail,
+          image: clerkUser.imageUrl || "",
+          role: "Farmer",
+          language: "English",
+          defaultLocation: "Pune",
+          defaultCrop: "Wheat & Mustard",
+          notificationPreferences: {
+            diseaseAlerts: true,
+            weatherAlerts: true,
+            soilAdvisories: true,
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+    } catch (fallbackErr) {
+      console.error("Clerk fallback error:", fallbackErr);
+    }
+    return null;
   }
 }

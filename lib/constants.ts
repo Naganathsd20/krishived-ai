@@ -56,9 +56,10 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
       },
       {
         title: "Crop Advisory",
-        href: "#",
+        href: "/crop-advisory",
         icon: Sprout,
         badge: "AI Ready",
+        isNew: true,
       },
       {
         title: "Disease Diagnostics",
@@ -84,18 +85,21 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
       },
       {
         title: "Yield Intelligence",
-        href: "#",
+        href: "/yield-intelligence",
         icon: TrendingUp,
+        isNew: true,
       },
       {
         title: "Field Reports",
-        href: "#",
+        href: "/field-reports",
         icon: FileText,
+        isNew: true,
       },
       {
         title: "Quality Assurance",
-        href: "#",
+        href: "/quality-assurance",
         icon: ShieldCheck,
+        isNew: true,
       },
     ],
   },
@@ -104,13 +108,15 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
     items: [
       {
         title: "Settings",
-        href: "#",
+        href: "/settings",
         icon: Settings,
+        isNew: true,
       },
       {
         title: "Help & Support",
-        href: "#",
+        href: "/help-support",
         icon: HelpCircle,
+        isNew: true,
       },
     ],
   },

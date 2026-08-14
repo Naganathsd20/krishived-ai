@@ -1,5 +1,11 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export interface INotificationPreferences {
+  diseaseAlerts: boolean;
+  weatherAlerts: boolean;
+  soilAdvisories: boolean;
+}
+
 export interface IUser extends Document {
   clerkId: string;
   name: string;
@@ -7,6 +13,9 @@ export interface IUser extends Document {
   image?: string;
   role: string;
   language: string;
+  defaultLocation?: string;
+  defaultCrop?: string;
+  notificationPreferences?: INotificationPreferences;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +50,19 @@ const UserSchema = new Schema<IUser>(
     language: {
       type: String,
       default: "English",
+    },
+    defaultLocation: {
+      type: String,
+      default: "Pune",
+    },
+    defaultCrop: {
+      type: String,
+      default: "Wheat & Mustard",
+    },
+    notificationPreferences: {
+      diseaseAlerts: { type: Boolean, default: true },
+      weatherAlerts: { type: Boolean, default: true },
+      soilAdvisories: { type: Boolean, default: true },
     },
   },
   {
