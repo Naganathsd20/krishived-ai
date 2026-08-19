@@ -542,26 +542,26 @@ export async function calculateSmartFarmIntelligence(
     };
   } catch (error) {
     console.error("Error calculating Smart Farm Intelligence:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Failed to compute Smart Farm Intelligence.";
+    const sanitizedError =
+      errorMessage.includes("Mongo") ||
+      errorMessage.includes("ECONNREFUSED") ||
+      errorMessage.includes("Atlas") ||
+      errorMessage.includes("connect")
+        ? "Unable to connect to farm intelligence service. Please try again."
+        : errorMessage;
+
     return {
-      success: true,
+      success: false,
+      error: sanitizedError,
       riskLevel: "INSUFFICIENT DATA",
       dataQuality: "LIMITED DATA",
-      reasons: [
-        "Farm intelligence telemetry service is currently syncing with database.",
-      ],
-      advisory:
-        "Perform crop disease diagnostic scans or save a soil recommendation report to update your risk evaluation.",
-      recommendations: [
-        {
-          id: "rec-fallback-1",
-          title: "Run Leaf Diagnostic Scan",
-          description:
-            "Upload photos of crop leaves on the Disease Diagnostics page for instant AI pathogen identification.",
-          category: "Disease",
-          priority: "High",
-          evidence: "Telemetry sync pending",
-        },
-      ],
+      reasons: ["Farm intelligence telemetry service connection issue."],
+      advisory: "Unable to calculate risk advisory due to service sync issue.",
+      recommendations: [],
       factors: {
         disease: {
           totalRecords: 0,

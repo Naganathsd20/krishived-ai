@@ -11,6 +11,15 @@ declare global {
   var mongooseCache: MongooseCache | undefined;
 }
 
+if (typeof window === "undefined") {
+  try {
+    dns.setDefaultResultOrder("ipv4first");
+    dns.setServers(["8.8.8.8", "1.1.1.1"]);
+  } catch {
+    // Ignore DNS override errors
+  }
+}
+
 let cached: MongooseCache = global.mongooseCache || { conn: null, promise: null };
 
 if (!global.mongooseCache) {
