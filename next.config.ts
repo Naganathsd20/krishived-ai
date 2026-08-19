@@ -29,6 +29,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  devIndicators: {
+    position: "bottom-right",
+  },
   images: {
     remotePatterns: [
       {

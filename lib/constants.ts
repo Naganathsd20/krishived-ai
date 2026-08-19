@@ -12,6 +12,7 @@ import {
   Bot,
   BarChart3,
   Store,
+  Landmark,
   LucideIcon,
 } from "lucide-react";
 
@@ -78,6 +79,13 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
         href: "/mandi-prices",
         icon: Store,
         badge: "Agmarknet",
+        isNew: true,
+      },
+      {
+        title: "Government Schemes",
+        href: "/government-schemes",
+        icon: Landmark,
+        badge: "Verified",
         isNew: true,
       },
     ],
