@@ -69,4 +69,25 @@ export async function connectDB(): Promise<typeof mongoose> {
   return cached.conn;
 }
 
+/**
+ * Lightweight server database health ping check helper.
+ */
+export async function checkDatabaseHealth(): Promise<{
+  isHealthy: boolean;
+  latencyMs: number | null;
+}> {
+  try {
+    const startTime = Date.now();
+    const db = await connectDB();
+    if (!db.connection || !db.connection.db) {
+      return { isHealthy: false, latencyMs: null };
+    }
+    await db.connection.db.admin().ping();
+    const latencyMs = Date.now() - startTime;
+    return { isHealthy: true, latencyMs };
+  } catch {
+    return { isHealthy: false, latencyMs: null };
+  }
+}
+
 export default connectDB;

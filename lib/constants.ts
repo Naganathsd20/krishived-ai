@@ -11,6 +11,7 @@ import {
   User,
   Bot,
   BarChart3,
+  Store,
   LucideIcon,
 } from "lucide-react";
 
@@ -71,6 +72,13 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
         title: "Weather & Soil",
         href: "/weather-soil",
         icon: CloudSun,
+      },
+      {
+        title: "Mandi Prices",
+        href: "/mandi-prices",
+        icon: Store,
+        badge: "Agmarknet",
+        isNew: true,
       },
     ],
   },

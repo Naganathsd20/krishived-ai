@@ -52,18 +52,7 @@ import { IAnalyticsResponse } from "@/types/analytics";
 import { IDiseaseAnalysisDocument } from "@/types/disease";
 import { ISoilRecommendationDocument } from "@/types/soil";
 import { IWeatherData } from "@/types/weather";
-import { jsPDF } from "jspdf";
-
-interface MongoUserProfile {
-  _id: string;
-  clerkId: string;
-  name: string;
-  email: string;
-  image: string;
-  role: string;
-  language: string;
-  createdAt?: string;
-}
+import { MongoUserProfile } from "@/types";
 
 export default function FieldReportsPage() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
@@ -411,10 +400,11 @@ export default function FieldReportsPage() {
   };
 
   // --------------------------------------------------------------------------
-  // PDF EXPORT GENERATOR (jsPDF)
+  // PDF EXPORT GENERATOR (jsPDF - Dynamic Import)
   // --------------------------------------------------------------------------
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
+      const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",

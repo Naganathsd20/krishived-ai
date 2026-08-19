@@ -24,7 +24,6 @@ import { SoilCropInsightsCard } from "@/components/analytics/SoilCropInsightsCar
 import { AIFarmInsightsCard } from "@/components/analytics/AIFarmInsightsCard";
 import { RecentActivityList } from "@/components/analytics/RecentActivityList";
 import { IAnalyticsResponse } from "@/types/analytics";
-import { jsPDF } from "jspdf";
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<IAnalyticsResponse | null>(null);
@@ -89,7 +88,7 @@ export default function AnalyticsPage() {
 
       const escapeCSV = (str: string) => {
         if (!str) return '""';
-        return `"${str.replace(/"/g, '""')}"`;
+        return `"${String(str).replace(/"/g, '""')}"`;
       };
 
       const dateStr = new Date().toLocaleDateString("en-US", {
@@ -99,124 +98,65 @@ export default function AnalyticsPage() {
         day: "numeric",
       });
 
-      // Header Metadata
-      rows.push(["KRISHIVED AI - FARM ANALYTICS REPORT"]);
-      rows.push(["Generated Date", dateStr]);
-      rows.push([""]);
+      rows.push(["KrishiVed AI Platform — Farm Analytics Report"]);
+      rows.push([`Generated: ${dateStr}`]);
+      rows.push([]);
 
-      // Section 1: Farm Health Overview
-      rows.push(["--- 1. FARM HEALTH OVERVIEW ---"]);
-      rows.push([
-        "Farm Health Score",
-        data.farmHealth?.overallScore !== null && data.farmHealth?.overallScore !== undefined
-          ? `${data.farmHealth.overallScore}/100`
-          : "N/A",
-      ]);
-      rows.push(["Health Status", data.farmHealth?.status || "N/A"]);
-      if (data.farmHealth?.breakdown) {
-        rows.push(["Crop Health Component", `${data.farmHealth.breakdown.cropHealthScore}/100`]);
-        rows.push(["Soil Health Component", `${data.farmHealth.breakdown.soilHealthScore}/100`]);
-        rows.push(["Disease Risk Component", `${data.farmHealth.breakdown.diseaseRiskScore}/100`]);
-        rows.push(["Weather Stability Component", `${data.farmHealth.breakdown.weatherStabilityScore}/100`]);
-        rows.push(["Irrigation Component", `${data.farmHealth.breakdown.irrigationScore}/100`]);
-      }
-      rows.push([""]);
+      rows.push(["1. FARM HEALTH SUMMARY"]);
+      rows.push(["Metric", "Value"]);
+      rows.push(["Farm Health Status", data.farmHealth?.status || "N/A"]);
+      rows.push(["Overall Score", data.farmHealth?.overallScore !== null ? `${data.farmHealth?.overallScore}/100` : "N/A"]);
+      rows.push(["Crop Health Score", `${data.farmHealth?.breakdown?.cropHealthScore ?? 0}/100`]);
+      rows.push(["Soil Health Score", `${data.farmHealth?.breakdown?.soilHealthScore ?? 0}/100`]);
+      rows.push(["Disease Risk Score", `${data.farmHealth?.breakdown?.diseaseRiskScore ?? 0}/100`]);
+      rows.push(["Weather Stability Score", `${data.farmHealth?.breakdown?.weatherStabilityScore ?? 0}/100`]);
+      rows.push(["Irrigation Score", `${data.farmHealth?.breakdown?.irrigationScore ?? 0}/100`]);
+      rows.push([]);
 
-      // Section 2: Key Statistics
-      rows.push(["--- 2. KEY STATISTICS ---"]);
-      rows.push(["Total Crop Diagnostics Scans", String(data.stats?.diseaseAnalysesCount ?? "N/A")]);
-      rows.push(["Saved Soil Recommendations", String(data.stats?.soilRecommendationsCount ?? "N/A")]);
-      rows.push(["Weather Telemetry Checks", String(data.stats?.weatherChecksCount ?? "N/A")]);
-      rows.push(["KrishiMitra AI Conversations", String(data.stats?.conversationsCount ?? "N/A")]);
-      rows.push(["Crop Health Scans", String(data.stats?.cropReportsCount ?? "N/A")]);
-      rows.push([""]);
+      rows.push(["2. TELEMETRY & RECORDS COUNTS"]);
+      rows.push(["Metric", "Count"]);
+      rows.push(["Total Crop Diagnostics", String(data.stats?.diseaseAnalysesCount ?? 0)]);
+      rows.push(["Saved Soil Reports", String(data.stats?.soilRecommendationsCount ?? 0)]);
+      rows.push(["KrishiMitra AI Conversations", String(data.stats?.conversationsCount ?? 0)]);
+      rows.push(["Weather Telemetry Checks", String(data.stats?.weatherChecksCount ?? 0)]);
+      rows.push([]);
 
-      // Section 3: Crop Health Distribution
-      rows.push(["--- 3. CROP HEALTH DISTRIBUTION ---"]);
-      rows.push(["Healthy Crop Count", String(data.cropHealth?.healthyCount ?? "N/A")]);
-      rows.push(["Healthy Crop Rate", `${data.cropHealth?.healthyPercentage ?? 0}%`]);
-      rows.push(["Moderate Risk Count", String(data.cropHealth?.moderateRiskCount ?? "N/A")]);
-      rows.push(["Moderate Risk Rate", `${data.cropHealth?.moderateRiskPercentage ?? 0}%`]);
-      rows.push(["High Risk Count", String(data.cropHealth?.highRiskCount ?? "N/A")]);
-      rows.push(["High Risk Rate", `${data.cropHealth?.highRiskPercentage ?? 0}%`]);
-      rows.push(["Total Fields Analyzed", String(data.cropHealth?.totalFieldsAnalyzed ?? "N/A")]);
-      rows.push([""]);
+      rows.push(["3. CROP HEALTH DISTRIBUTION"]);
+      rows.push(["Category", "Count", "Percentage"]);
+      rows.push(["Healthy Crops", String(data.cropHealth?.healthyCount ?? 0), `${data.cropHealth?.healthyPercentage ?? 0}%`]);
+      rows.push(["Moderate Risk Fields", String(data.cropHealth?.moderateRiskCount ?? 0), `${data.cropHealth?.moderateRiskPercentage ?? 0}%`]);
+      rows.push(["High Risk Fields", String(data.cropHealth?.highRiskCount ?? 0), `${data.cropHealth?.highRiskPercentage ?? 0}%`]);
+      rows.push([]);
 
-      // Section 4: Disease Analytics
-      rows.push(["--- 4. DISEASE DIAGNOSTICS ANALYTICS ---"]);
-      rows.push(["Total Disease Scans", String(data.diseaseAnalytics?.totalAnalyses ?? "N/A")]);
-      rows.push(["Healthy Scans Count", String(data.diseaseAnalytics?.healthyCount ?? "N/A")]);
-      rows.push(["Disease Detected Count", String(data.diseaseAnalytics?.diseaseDetectedCount ?? "N/A")]);
-      rows.push(["Highest Detected Disease", escapeCSV(data.diseaseAnalytics?.highestDetectedDisease || "None Detected")]);
-      if (data.diseaseAnalytics?.breakdown && data.diseaseAnalytics.breakdown.length > 0) {
-        rows.push(["Disease Breakdown:"]);
-        rows.push(["Disease Name", "Count", "Percentage", "Severity"]);
-        data.diseaseAnalytics.breakdown.forEach((item) => {
-          rows.push([
-            escapeCSV(item.name),
-            String(item.count),
-            `${item.percentage}%`,
-            item.severity,
-          ]);
-        });
-      }
-      rows.push([""]);
+      rows.push(["4. DETECTED DISEASES BREAKDOWN"]);
+      rows.push(["Disease Name", "Occurrences", "Percentage", "Risk Level"]);
+      (data.diseaseAnalytics?.breakdown || []).forEach((item) => {
+        rows.push([item.name, String(item.count), `${item.percentage}%`, item.severity]);
+      });
+      rows.push([]);
 
-      // Section 5: Weather Analytics
-      rows.push(["--- 5. WEATHER TELEMETRY ANALYTICS ---"]);
-      rows.push(["Recent City", escapeCSV(data.weatherAnalytics?.recentCity || "N/A")]);
-      rows.push([
-        "Average Temperature",
-        data.weatherAnalytics?.avgTemperature !== null ? `${data.weatherAnalytics.avgTemperature}°C` : "N/A",
-      ]);
-      rows.push([
-        "Average Relative Humidity",
-        data.weatherAnalytics?.avgHumidity !== null ? `${data.weatherAnalytics.avgHumidity}%` : "N/A",
-      ]);
-      rows.push([
-        "Average Rain Probability",
-        data.weatherAnalytics?.avgRainProbability !== null ? `${data.weatherAnalytics.avgRainProbability}%` : "N/A",
-      ]);
-      rows.push([""]);
+      rows.push(["5. WEATHER & SOIL ADVISORIES"]);
+      rows.push(["Regional Location", data.weatherAnalytics?.recentCity || "Pune"]);
+      rows.push(["Average Temperature", data.weatherAnalytics?.avgTemperature !== null ? `${data.weatherAnalytics?.avgTemperature}°C` : "N/A"]);
+      rows.push(["Average Humidity", data.weatherAnalytics?.avgHumidity !== null ? `${data.weatherAnalytics?.avgHumidity}%` : "N/A"]);
+      rows.push(["Rain Probability", data.weatherAnalytics?.avgRainProbability !== null ? `${data.weatherAnalytics?.avgRainProbability}%` : "N/A"]);
+      rows.push(["Most Recommended Crop", data.soilCropInsights?.mostRecommendedCrop || "N/A"]);
+      rows.push(["Recommended Fertilizer", data.soilCropInsights?.mostCommonFertilizer || "N/A"]);
+      rows.push(["Irrigation Advisory", data.soilCropInsights?.irrigationRecommendation || "N/A"]);
+      rows.push([]);
 
-      // Section 6: Soil & Crop Insights
-      rows.push(["--- 6. SOIL & CROP INSIGHTS ---"]);
-      rows.push(["Most Recommended Crop", escapeCSV(data.soilCropInsights?.mostRecommendedCrop || "N/A")]);
-      rows.push(["Average Soil Health Score", escapeCSV(data.soilCropInsights?.averageSoilScore || "N/A")]);
-      rows.push(["Most Common NPK Fertilizer", escapeCSV(data.soilCropInsights?.mostCommonFertilizer || "N/A")]);
-      rows.push(["Irrigation Recommendation", escapeCSV(data.soilCropInsights?.irrigationRecommendation || "N/A")]);
-      rows.push([""]);
+      rows.push(["6. RECENT FARMING ACTIVITY LOG"]);
+      rows.push(["Timestamp", "Activity Title", "Details"]);
+      (data.recentActivities || []).forEach((act) => {
+        rows.push([act.timestamp, act.title, act.subtitle]);
+      });
 
-      // Section 7: Smart AI Farm Insights
-      rows.push(["--- 7. SMART AI FARM INSIGHTS ---"]);
-      if (data.aiInsights && data.aiInsights.length > 0) {
-        data.aiInsights.forEach((insight, idx) => {
-          rows.push([`Insight ${idx + 1}`, escapeCSV(insight)]);
-        });
-      } else {
-        rows.push(["Info", "No active AI farm insights."]);
-      }
-      rows.push([""]);
-
-      // Section 8: Recent Activity Log
-      rows.push(["--- 8. RECENT ACTIVITY LOG ---"]);
-      rows.push(["Date/Time", "Activity Title", "Details"]);
-      if (data.recentActivities && data.recentActivities.length > 0) {
-        data.recentActivities.forEach((act) => {
-          rows.push([act.timestamp, escapeCSV(act.title), escapeCSV(act.subtitle)]);
-        });
-      } else {
-        rows.push(["N/A", "No recent activity logged.", "-"]);
-      }
-
-      const csvContent = "data:text/csv;charset=utf-8," + rows.map((e) => e.join(",")).join("\n");
-      const encodedUri = encodeURI(csvContent);
+      const csvContent = rows.map((r) => r.map(escapeCSV).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute(
-        "download",
-        `KrishiVed_Farm_Analytics_${new Date().toISOString().split("T")[0]}.csv`
-      );
+      link.setAttribute("href", url);
+      link.setAttribute("download", `KrishiVed_Farm_Analytics_${new Date().toISOString().split("T")[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -231,12 +171,13 @@ export default function AnalyticsPage() {
   };
 
   // --------------------------------------------------------------------------
-  // PDF EXPORT GENERATOR (jsPDF)
+  // PDF EXPORT GENERATOR (jsPDF - Dynamic Import)
   // --------------------------------------------------------------------------
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!data) return;
     setIsExportingPDF(true);
     try {
+      const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",

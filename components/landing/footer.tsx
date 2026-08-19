@@ -35,12 +35,12 @@ export const Footer: React.FC = () => {
               >
                 <Github className="w-4 h-4" />
               </a>
-              <a
-                href="#"
+              <Link
+                href="/help-support"
                 className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
               >
                 <Globe className="w-4 h-4" />
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -66,7 +66,7 @@ export const Footer: React.FC = () => {
                 </a>
               </li>
               <li>
-                <Link href="/(dashboard)" className="hover:text-emerald-400 transition-colors">
+                <Link href="/dashboard" className="hover:text-emerald-400 transition-colors">
                   Live Dashboard
                 </Link>
               </li>

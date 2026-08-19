@@ -54,7 +54,7 @@ export const Hero: React.FC = () => {
 
             {/* Two Primary / Secondary CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-1">
-              <Link href="/(dashboard)">
+              <Link href="/dashboard">
                 <Button
                   variant="emerald"
                   size="lg"

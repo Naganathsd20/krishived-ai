@@ -1,10 +1,27 @@
 import { IWeatherData } from "@/types/weather";
 
+interface CachedWeatherRecord {
+  data: IWeatherData;
+  expiresAt: number;
+}
+
+const weatherMemoryCache = new Map<string, CachedWeatherRecord>();
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes TTL
+
 /**
  * Fetches real-time weather and agricultural atmospheric telemetry data.
- * Supports OpenWeatherMap API integration with a smart fallback provider.
+ * Supports OpenWeatherMap API integration with a 10-minute server cache and smart fallback provider.
  */
 export async function fetchWeatherData(city: string): Promise<IWeatherData> {
+  const normalizedKey = city.trim().toLowerCase();
+  const now = Date.now();
+
+  // 1. Check in-memory server cache
+  const cachedEntry = weatherMemoryCache.get(normalizedKey);
+  if (cachedEntry && cachedEntry.expiresAt > now) {
+    return cachedEntry.data;
+  }
+
   const apiKey =
     process.env.OPENWEATHER_API_KEY ||
     process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
@@ -15,7 +32,7 @@ export async function fetchWeatherData(city: string): Promise<IWeatherData> {
         `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
           city
         )}&units=metric&appid=${apiKey}`,
-        { cache: "no-store" }
+        { next: { revalidate: 600 } }
       );
 
       if (res.ok) {
@@ -29,7 +46,7 @@ export async function fetchWeatherData(city: string): Promise<IWeatherData> {
           });
         };
 
-        return {
+        const weatherResult: IWeatherData = {
           city: data.name || city,
           country: data.sys?.country || "IN",
           temperature: Math.round(data.main.temp),
@@ -53,17 +70,35 @@ export async function fetchWeatherData(city: string): Promise<IWeatherData> {
             minute: "2-digit",
           }),
         };
+
+        weatherMemoryCache.set(normalizedKey, {
+          data: weatherResult,
+          expiresAt: now + CACHE_TTL_MS,
+        });
+
+        return weatherResult;
       }
     } catch (err) {
       console.warn(
-        "OpenWeatherMap API error, falling back to agricultural weather telemetry:",
+        "OpenWeatherMap API error, falling back to cached or agricultural weather telemetry:",
         err
       );
     }
   }
 
-  // Fallback provider for any village/city query
-  return generateAgriWeatherData(city);
+  // 2. Return expired cached data if available on API failure
+  if (cachedEntry) {
+    return cachedEntry.data;
+  }
+
+  // 3. Fallback provider for any village/city query
+  const fallbackData = generateAgriWeatherData(city);
+  weatherMemoryCache.set(normalizedKey, {
+    data: fallbackData,
+    expiresAt: now + CACHE_TTL_MS,
+  });
+
+  return fallbackData;
 }
 
 function getWindDirection(deg: number): string {

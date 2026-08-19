@@ -42,7 +42,7 @@ export const CTA: React.FC = () => {
 
             {/* Two Action Buttons */}
             <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/(dashboard)">
+              <Link href="/dashboard">
                 <Button
                   variant="emerald"
                   size="lg"

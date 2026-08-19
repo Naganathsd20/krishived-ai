@@ -36,3 +36,24 @@ export interface LoadingStateProps {
   size?: "sm" | "md" | "lg";
   fullScreen?: boolean;
 }
+
+export interface NotificationSettings {
+  diseaseAlerts: boolean;
+  weatherAlerts: boolean;
+  soilAdvisories: boolean;
+}
+
+export interface MongoUserProfile {
+  _id: string;
+  clerkId: string;
+  name: string;
+  email: string;
+  image: string;
+  role: string;
+  language: string;
+  defaultLocation?: string;
+  defaultCrop?: string;
+  notificationPreferences?: NotificationSettings;
+  createdAt?: string;
+}
+

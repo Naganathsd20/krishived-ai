@@ -40,16 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SkeletonCard, Spinner } from "@/components/ui/loading";
 import { SmartFarmIntelligenceCard } from "@/components/dashboard/SmartFarmIntelligenceCard";
-
-interface MongoUserProfile {
-  _id: string;
-  clerkId: string;
-  name: string;
-  email: string;
-  image: string;
-  role: string;
-  language: string;
-}
+import { MongoUserProfile } from "@/types";
 
 interface AnalyticsData {
   farmHealth: {

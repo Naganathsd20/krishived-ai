@@ -31,10 +31,10 @@ export const Footer: React.FC = () => {
 
         {/* Right: Version & Links */}
         <div className="flex items-center gap-4 text-slate-400 font-medium">
-          <a href="#" className="hover:text-emerald-600 transition-colors">
+          <a href="/help-support" className="hover:text-emerald-600 transition-colors">
             Privacy
           </a>
-          <a href="#" className="hover:text-emerald-600 transition-colors">
+          <a href="/help-support" className="hover:text-emerald-600 transition-colors">
             Terms
           </a>
           <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono text-[10px]">

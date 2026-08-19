@@ -35,25 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Spinner, SkeletonCard } from "@/components/ui/loading";
-
-interface NotificationSettings {
-  diseaseAlerts: boolean;
-  weatherAlerts: boolean;
-  soilAdvisories: boolean;
-}
-
-interface MongoUserProfile {
-  _id: string;
-  clerkId: string;
-  name: string;
-  email: string;
-  image: string;
-  role: string;
-  language: string;
-  defaultLocation?: string;
-  defaultCrop?: string;
-  notificationPreferences?: NotificationSettings;
-}
+import { MongoUserProfile, NotificationSettings } from "@/types";
 
 const LANGUAGE_OPTIONS = [
   { value: "English", label: "English (Default)" },

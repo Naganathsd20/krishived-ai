@@ -4,29 +4,32 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Conversation from "@/models/Conversation";
 import { generateFarmingChatResponse } from "@/lib/gemini";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
-function devLog(...args: any[]) {
-  if (process.env.NODE_ENV === "development") {
-    console.log("[API /api/ai-assistant/chat]", ...args);
+function sanitizeErrorMessage(rawError: unknown): string {
+  if (typeof rawError === "string") {
+    if (rawError.includes("Mongo") || rawError.includes("API key") || rawError.includes("GEMINI")) {
+      return "Unable to process chat request right now. Please try again.";
+    }
+    return rawError;
   }
-}
-
-function devError(...args: any[]) {
-  if (process.env.NODE_ENV === "development") {
-    console.error("[API /api/ai-assistant/chat ERROR]", ...args);
+  if (rawError instanceof Error) {
+    const msg = rawError.message;
+    if (msg.includes("Mongo") || msg.includes("API key") || msg.includes("GEMINI") || msg.includes("connect")) {
+      return "Unable to process chat request right now. Please try again.";
+    }
+    return msg;
   }
+  return "Failed to process AI chat request.";
 }
 
 export async function POST(request: Request) {
-  devLog("POST chat message request received");
-
   // 1. Verify Clerk Authentication
   let userId: string | null = null;
   try {
     const authObj = await auth();
     userId = authObj.userId;
-  } catch (err: any) {
-    devError("Auth check exception:", err);
+  } catch {
     return NextResponse.json(
       { success: false, error: "Unauthorized. Auth check failed." },
       { status: 401 }
@@ -40,11 +43,22 @@ export async function POST(request: Request) {
     );
   }
 
-  // 2. Parse & Validate Payload
+  // 2. Apply Rate Limiting (15 chat messages per minute per user/IP)
+  const clientIp = getClientIp(request);
+  const rateLimit = checkRateLimit(`chat-post:${userId}:${clientIp}`, 15, 60 * 1000);
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { success: false, error: "Too many requests. Please try again later." },
+      { status: 429 }
+    );
+  }
+
+  // 3. Parse & Validate Payload
   let body: any = {};
   try {
     body = await request.json();
-  } catch (jsonErr) {
+  } catch {
     return NextResponse.json(
       { success: false, error: "Invalid JSON payload." },
       { status: 400 }
@@ -60,13 +74,28 @@ export async function POST(request: Request) {
     );
   }
 
-  // 3. Connect to Database
+  const trimmedMessage = message.trim();
+  if (trimmedMessage.length > 2000) {
+    return NextResponse.json(
+      { success: false, error: "Message exceeds maximum allowed length of 2000 characters." },
+      { status: 400 }
+    );
+  }
+
+  if (image && typeof image === "string" && image.length > 5000000) {
+    return NextResponse.json(
+      { success: false, error: "Image data exceeds allowable size limit." },
+      { status: 400 }
+    );
+  }
+
+  // 4. Connect to Database
   try {
     await connectDB();
-  } catch (dbErr: any) {
-    devError("Database connection error:", dbErr);
+  } catch (dbErr) {
+    console.error("Database connection error in chat endpoint:", dbErr);
     return NextResponse.json(
-      { success: false, error: "Database connection failed." },
+      { success: false, error: "Database connection failed. Please try again later." },
       { status: 500 }
     );
   }
@@ -76,12 +105,12 @@ export async function POST(request: Request) {
     let existingHistory: Array<{ sender: "user" | "ai"; text: string }> = [];
 
     // Check if conversationId is a valid MongoDB ObjectId
-    const isValiObjectId =
+    const isValidObjectId =
       conversationId &&
       typeof conversationId === "string" &&
       mongoose.Types.ObjectId.isValid(conversationId);
 
-    if (isValiObjectId) {
+    if (isValidObjectId) {
       conversation = await Conversation.findOne({
         _id: conversationId,
         clerkUserId: userId,
@@ -95,11 +124,10 @@ export async function POST(request: Request) {
       }
     }
 
-    // 4. Generate Gemini AI Response
-    devLog("Calling Gemini Assistant AI...");
+    // 5. Generate Gemini AI Response
     const aiResponseText = await generateFarmingChatResponse(
       existingHistory,
-      message.trim(),
+      trimmedMessage,
       image
     );
 
@@ -107,8 +135,8 @@ export async function POST(request: Request) {
     const userMsg = {
       id: `usr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       sender: "user" as const,
-      text: message.trim(),
-      image: image || "",
+      text: trimmedMessage,
+      image: typeof image === "string" ? image : "",
       timestamp: now,
     };
 
@@ -124,7 +152,7 @@ export async function POST(request: Request) {
 
     if (!conversation) {
       isNewConversation = true;
-      let cleanTitle = message.trim()
+      let cleanTitle = trimmedMessage
         .replace(/KrishiVed Advisory for:?/gi, "KrishiMitra Advice for")
         .replace(/KrishiVed AI Agricultural Advisory/gi, "KrishiMitra Advice")
         .replace(/KrishiVed Assistant/gi, "KrishiMitra")
@@ -139,12 +167,10 @@ export async function POST(request: Request) {
         title: cleanTitle,
         messages: [userMsg, aiMsg],
       });
-      devLog(`Created new conversation ${conversation._id}`);
     } else {
       conversation.messages.push(userMsg, aiMsg);
       conversation.updatedAt = now;
       await conversation.save();
-      devLog(`Updated existing conversation ${conversation._id}`);
     }
 
     return NextResponse.json(
@@ -157,12 +183,13 @@ export async function POST(request: Request) {
       },
       { status: isNewConversation ? 201 : 200 }
     );
-  } catch (error: any) {
-    devError("POST chat message error:", error);
+  } catch (error) {
+    console.error("POST chat message error:", error);
+    const sanitizedMsg = sanitizeErrorMessage(error);
     return NextResponse.json(
       {
         success: false,
-        error: error?.message || "Failed to process AI chat request.",
+        error: sanitizedMsg,
       },
       { status: 500 }
     );

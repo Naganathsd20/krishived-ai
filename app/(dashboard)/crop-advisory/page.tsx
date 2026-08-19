@@ -44,18 +44,7 @@ import { IAnalyticsResponse } from "@/types/analytics";
 import { IFarmIntelligenceResponse } from "@/types/farm-intelligence";
 import { ISoilRecommendationDocument, ISoilRecommendationResult } from "@/types/soil";
 import { IWeatherData } from "@/types/weather";
-
-interface MongoUserProfile {
-  _id: string;
-  clerkId: string;
-  name: string;
-  email: string;
-  image: string;
-  role: string;
-  language: string;
-  defaultLocation?: string;
-  defaultCrop?: string;
-}
+import { MongoUserProfile } from "@/types";
 
 export default function CropAdvisoryPage() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
