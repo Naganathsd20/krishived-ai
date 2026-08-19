@@ -13,6 +13,7 @@ import {
   BarChart3,
   Store,
   Landmark,
+  BookOpen,
   LucideIcon,
 } from "lucide-react";
 
@@ -44,6 +45,13 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
         title: "Overview",
         href: "/dashboard",
         icon: LayoutDashboard,
+      },
+      {
+        title: "Farm Diary",
+        href: "/farm-diary",
+        icon: BookOpen,
+        badge: "New",
+        isNew: true,
       },
       {
         title: "KrishiMitra",
