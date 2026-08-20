@@ -16,6 +16,8 @@ import {
   BookOpen,
   Building2,
   Calendar,
+  Droplets,
+  ShieldAlert,
   LucideIcon,
 } from "lucide-react";
 
@@ -60,6 +62,13 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
         href: "/crop-schedule",
         icon: Calendar,
         badge: "ICAR Engine",
+        isNew: true,
+      },
+      {
+        title: "Irrigation Planning",
+        href: "/irrigation",
+        icon: Droplets,
+        badge: "Smart Engine",
         isNew: true,
       },
       {
@@ -146,6 +155,13 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
   {
     label: "System",
     items: [
+      {
+        title: "Admin Dashboard",
+        href: "/admin",
+        icon: ShieldAlert,
+        badge: "Admin",
+        isNew: true,
+      },
       {
         title: "Settings",
         href: "/settings",
