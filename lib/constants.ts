@@ -15,6 +15,7 @@ import {
   Landmark,
   BookOpen,
   Building2,
+  Calendar,
   LucideIcon,
 } from "lucide-react";
 
@@ -52,6 +53,13 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
         href: "/farm-diary",
         icon: BookOpen,
         badge: "New",
+        isNew: true,
+      },
+      {
+        title: "Crop Schedule",
+        href: "/crop-schedule",
+        icon: Calendar,
+        badge: "ICAR Engine",
         isNew: true,
       },
       {
