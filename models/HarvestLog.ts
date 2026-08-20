@@ -79,6 +79,8 @@ const HarvestLogSchema = new Schema<IHarvestLogModel>(
   }
 );
 
+HarvestLogSchema.index({ clerkId: 1, harvestDate: -1 });
+
 const HarvestLog: Model<IHarvestLogModel> =
   mongoose.models.HarvestLog ||
   mongoose.model<IHarvestLogModel>("HarvestLog", HarvestLogSchema);

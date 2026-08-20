@@ -10,6 +10,7 @@ import {
   Download,
   FileSpreadsheet,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/container";
 import { Badge } from "@/components/ui/badge";
@@ -23,9 +24,11 @@ import { WeatherAnalyticsCard } from "@/components/analytics/WeatherAnalyticsCar
 import { SoilCropInsightsCard } from "@/components/analytics/SoilCropInsightsCard";
 import { AIFarmInsightsCard } from "@/components/analytics/AIFarmInsightsCard";
 import { RecentActivityList } from "@/components/analytics/RecentActivityList";
+import { AdvancedAnalyticsTab } from "@/components/analytics/AdvancedAnalyticsTab";
 import { IAnalyticsResponse } from "@/types/analytics";
 
 export default function AnalyticsPage() {
+  const [activeTab, setActiveTab] = useState<"overview" | "advanced">("overview");
   const [data, setData] = useState<IAnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -461,83 +464,119 @@ export default function AnalyticsPage() {
         }
       />
 
-      {/* Initial Loading State */}
-      {isLoading && !data && (
-        <div className="py-24 text-center space-y-4">
-          <div className="relative flex items-center justify-center">
-            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto" />
-            <div className="absolute w-14 h-14 rounded-full border-4 border-emerald-200 animate-ping opacity-25" />
-          </div>
-          <div className="text-base font-extrabold text-slate-800 tracking-tight">
-            Loading farm analytics...
-          </div>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Fetching real-time crop diagnostics, saved soil recommendations, weather checks, and AI conversations.
-          </p>
-        </div>
-      )}
-
-      {/* Error State */}
-      {!isLoading && errorMsg && !data && (
-        <div className="p-6 rounded-3xl bg-rose-50 border border-rose-200/80 text-center space-y-4 max-w-lg mx-auto my-12">
-          <div className="p-3 w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 mx-auto flex items-center justify-center">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-base font-extrabold text-rose-900">
-              Unable to load farm analytics. Please try again.
-            </h3>
-            <p className="text-xs text-rose-700">{errorMsg}</p>
-          </div>
-          <Button
-            variant="emerald"
-            size="sm"
-            onClick={() => fetchAnalyticsData(true)}
-            className="rounded-xl gap-2 font-bold text-xs"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Retry Connection</span>
-          </Button>
-        </div>
-      )}
-
-      {/* Real Data Render */}
-      {data && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="space-y-6"
+      {/* Dual Tab Navigation Header */}
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100/90 border border-slate-200/80 w-fit">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === "overview"
+              ? "bg-white text-emerald-800 shadow-sm border border-emerald-200/60"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+          }`}
         >
-          {/* 1. Farm Health Overview (Large Score Card) */}
-          <section>
-            <FarmHealthCard data={data.farmHealth} />
-          </section>
+          <BarChart3 className="w-4 h-4 text-emerald-600" />
+          <span>Overview Analytics</span>
+        </button>
 
-          {/* 2. Key Statistics Cards (5 Cards Grid) */}
-          <section>
-            <AnalyticsStatCards stats={data.stats} />
-          </section>
+        <button
+          onClick={() => setActiveTab("advanced")}
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === "advanced"
+              ? "bg-white text-emerald-800 shadow-sm border border-emerald-200/60"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <span>Advanced Analytics</span>
+          <Badge variant="emerald" className="text-[9px] py-0 px-1.5 font-bold">New</Badge>
+        </button>
+      </div>
 
-          {/* 3 & 4. Crop Health & Disease Analytics */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <CropHealthChart data={data.cropHealth} />
-            <DiseaseAnalyticsCard data={data.diseaseAnalytics} />
-          </section>
+      {/* TAB 1: OVERVIEW ANALYTICS */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          {/* Initial Loading State */}
+          {isLoading && !data && (
+            <div className="py-24 text-center space-y-4">
+              <div className="relative flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto" />
+                <div className="absolute w-14 h-14 rounded-full border-4 border-emerald-200 animate-ping opacity-25" />
+              </div>
+              <div className="text-base font-extrabold text-slate-800 tracking-tight">
+                Loading farm analytics...
+              </div>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Fetching real-time crop diagnostics, saved soil recommendations, weather checks, and AI conversations.
+              </p>
+            </div>
+          )}
 
-          {/* 5 & 6. Weather Analytics & Soil/Crop Insights */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <WeatherAnalyticsCard data={data.weatherAnalytics} />
-            <SoilCropInsightsCard data={data.soilCropInsights} />
-          </section>
+          {/* Error State */}
+          {!isLoading && errorMsg && !data && (
+            <div className="p-6 rounded-3xl bg-rose-50 border border-rose-200/80 text-center space-y-4 max-w-lg mx-auto my-12">
+              <div className="p-3 w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 mx-auto flex items-center justify-center">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-extrabold text-rose-900">
+                  Unable to load farm analytics. Please try again.
+                </h3>
+                <p className="text-xs text-rose-700">{errorMsg}</p>
+              </div>
+              <Button
+                variant="emerald"
+                size="sm"
+                onClick={() => fetchAnalyticsData(true)}
+                className="rounded-xl gap-2 font-bold text-xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retry Connection</span>
+              </Button>
+            </div>
+          )}
 
-          {/* 7 & 8. AI Farm Insights & Recent Activity */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <AIFarmInsightsCard insights={data.aiInsights} />
-            <RecentActivityList activities={data.recentActivities} />
-          </section>
-        </motion.div>
+          {/* Real Data Render */}
+          {data && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              {/* 1. Farm Health Overview (Large Score Card) */}
+              <section>
+                <FarmHealthCard data={data.farmHealth} />
+              </section>
+
+              {/* 2. Key Statistics Cards (5 Cards Grid) */}
+              <section>
+                <AnalyticsStatCards stats={data.stats} />
+              </section>
+
+              {/* 3 & 4. Crop Health & Disease Analytics */}
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                <CropHealthChart data={data.cropHealth} />
+                <DiseaseAnalyticsCard data={data.diseaseAnalytics} />
+              </section>
+
+              {/* 5 & 6. Weather Analytics & Soil/Crop Insights */}
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                <WeatherAnalyticsCard data={data.weatherAnalytics} />
+                <SoilCropInsightsCard data={data.soilCropInsights} />
+              </section>
+
+              {/* 7 & 8. AI Farm Insights & Recent Activity */}
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                <AIFarmInsightsCard insights={data.aiInsights} />
+                <RecentActivityList activities={data.recentActivities} />
+              </section>
+            </motion.div>
+          )}
+        </div>
       )}
+
+      {/* TAB 2: ADVANCED ANALYTICS */}
+      {activeTab === "advanced" && <AdvancedAnalyticsTab />}
     </PageContainer>
   );
 }
