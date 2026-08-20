@@ -14,6 +14,7 @@ import {
   Store,
   Landmark,
   BookOpen,
+  Building2,
   LucideIcon,
 } from "lucide-react";
 
@@ -93,6 +94,13 @@ export const DASHBOARD_NAV_ITEMS: NavSection[] = [
         title: "Government Schemes",
         href: "/government-schemes",
         icon: Landmark,
+        badge: "Verified",
+        isNew: true,
+      },
+      {
+        title: "Agri Support Centers",
+        href: "/agriculture-centers",
+        icon: Building2,
         badge: "Verified",
         isNew: true,
       },
