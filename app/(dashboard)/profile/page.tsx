@@ -29,11 +29,11 @@ export default async function ProfilePage() {
   return (
     <PageContainer>
       <PageHeader
-        title="User Profile & Account Settings"
-        description="View and manage your KrishiVed AI farmer profile, authentication preferences, and system language settings."
+        title="User Profile & Account"
+        description="View your registered KrishiVed AI farmer profile and account details."
         badge={
           <Badge variant="emerald" dot>
-            MongoDB User Profile
+            Farmer Account
           </Badge>
         }
       />
@@ -133,30 +133,59 @@ export default async function ProfilePage() {
           </div>
         </Card>
 
-        {/* Account System Status */}
-        <Card variant="glass">
-          <CardHeader>
+        {/* Your KrishiVed AI Account Card */}
+        <Card variant="glass" className="border-emerald-200/80 shadow-md">
+          <CardHeader className="pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <Sprout className="w-5 h-5 text-emerald-600" />
-              <CardTitle>MongoDB Account Synchronization</CardTitle>
+              <CardTitle className="text-base font-bold text-slate-900">
+                Your KrishiVed AI Account
+              </CardTitle>
             </div>
-            <CardDescription>
-              Your Clerk identity and MongoDB profile database are in active sync.
+            <CardDescription className="text-xs text-slate-500">
+              Overview of your active farmer membership and platform details.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/60 text-sm">
-              <div className="flex items-center gap-2 text-emerald-950 font-medium">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Clerk ID: <code className="text-xs font-mono text-emerald-800 bg-white/80 px-1.5 py-0.5 rounded">{user.clerkId}</code></span>
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-700">Account Status</span>
+                </div>
+                <Badge variant="emerald" className="text-xs font-bold">
+                  Active
+                </Badge>
               </div>
-              <span className="text-xs text-emerald-700 font-semibold">Active</span>
-            </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/60 text-sm">
-              <div className="flex items-center gap-2 text-slate-700 font-medium">
-                <Calendar className="w-4 h-4 text-slate-500" />
-                <span>Member Since: {formattedDate}</span>
+              <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/60 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-700">Member Since</span>
+                </div>
+                <span className="text-xs font-bold text-slate-900 font-mono">
+                  {formattedDate}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/60 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Shield className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-700">Account Type</span>
+                </div>
+                <span className="text-xs font-bold text-slate-900">
+                  {user.role || "Farmer"}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/60 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Globe className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span className="text-xs font-semibold text-slate-700">Language</span>
+                </div>
+                <span className="text-xs font-bold text-slate-900">
+                  {user.language || "English"}
+                </span>
               </div>
             </div>
           </CardContent>
