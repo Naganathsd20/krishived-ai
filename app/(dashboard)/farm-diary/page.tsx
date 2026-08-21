@@ -243,11 +243,11 @@ export default function FarmDiaryPage() {
       if (res.ok && result.success) {
         fetchDiary();
       } else {
-        alert(result.error || "Failed to delete entry.");
+        setErrorMsg(result.error || "Failed to delete entry.");
       }
     } catch (err) {
       console.error("Error deleting entry:", err);
-      alert("Failed to delete entry. Please check network connection.");
+      setErrorMsg("Failed to delete entry. Please check network connection.");
     } finally {
       setDeletingId(null);
     }
