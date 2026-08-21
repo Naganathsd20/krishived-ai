@@ -468,27 +468,45 @@ export default function AnalyticsPage() {
       <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100/90 border border-slate-200/80 w-fit max-w-full overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`relative px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === "overview"
-              ? "bg-white text-emerald-800 shadow-sm border border-emerald-200/60"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+              ? "text-emerald-800"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          <BarChart3 className="w-4 h-4 text-emerald-600" />
-          <span>Overview Analytics</span>
+          {activeTab === "overview" && (
+            <motion.div
+              layoutId="activeAnalyticsTabPill"
+              className="absolute inset-0 bg-white rounded-xl shadow-sm border border-emerald-200/60"
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-emerald-600" />
+            <span>Overview Analytics</span>
+          </span>
         </button>
 
         <button
           onClick={() => setActiveTab("advanced")}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`relative px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === "advanced"
-              ? "bg-white text-emerald-800 shadow-sm border border-emerald-200/60"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+              ? "text-emerald-800"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          <span>Advanced Analytics</span>
-          <Badge variant="emerald" className="text-[9px] py-0 px-1.5 font-bold">New</Badge>
+          {activeTab === "advanced" && (
+            <motion.div
+              layoutId="activeAnalyticsTabPill"
+              className="absolute inset-0 bg-white rounded-xl shadow-sm border border-emerald-200/60"
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span>Advanced Analytics</span>
+            <Badge variant="emerald" className="text-[9px] py-0 px-1.5 font-bold">New</Badge>
+          </span>
         </button>
       </div>
 

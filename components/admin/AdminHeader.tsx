@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import { ShieldCheck, RefreshCw, Clock, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,13 +62,20 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
               key={r.value}
               type="button"
               onClick={() => onRangeChange(r.value)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`relative px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 selectedRange === r.value
-                  ? "bg-white text-emerald-800 shadow-sm"
+                  ? "text-emerald-800"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              {r.label}
+              {selectedRange === r.value && (
+                <motion.div
+                  layoutId="activeAdminRange"
+                  className="absolute inset-0 bg-white rounded-xl shadow-sm border border-emerald-200/60"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">{r.label}</span>
             </button>
           ))}
         </div>

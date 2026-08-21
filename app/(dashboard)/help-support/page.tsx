@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   HelpCircle,
   BookOpen,
@@ -264,11 +265,20 @@ export default function HelpSupportPage() {
                     )}
                   </button>
 
-                  {isOpen && (
-                    <div className="px-4 pb-4 pt-1 text-xs text-slate-700 leading-relaxed border-t border-emerald-200/50">
-                      {faq.answer}
-                    </div>
-                  )}
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                      >
+                        <div className="px-4 pb-4 pt-1 text-xs text-slate-700 leading-relaxed border-t border-emerald-200/50">
+                          {faq.answer}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}

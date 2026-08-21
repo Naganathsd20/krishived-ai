@@ -25,9 +25,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         className
       )}
     >
-      <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-600 mb-5 shadow-inner">
+      <motion.div
+        animate={{ y: [0, -6, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-600 mb-5 shadow-inner"
+      >
         {icon || <Sprout className="w-8 h-8" />}
-      </div>
+      </motion.div>
 
       <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">
         {title}
