@@ -465,7 +465,7 @@ export default function AnalyticsPage() {
       />
 
       {/* Dual Tab Navigation Header */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100/90 border border-slate-200/80 w-fit">
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100/90 border border-slate-200/80 w-fit max-w-full overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab("overview")}
           className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${

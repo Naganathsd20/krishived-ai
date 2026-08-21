@@ -55,7 +55,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
 
       <div className="flex flex-wrap items-center gap-2">
         {/* Time Range Selector */}
-        <div className="flex items-center p-1 rounded-2xl bg-slate-100/90 border border-slate-200/80">
+        <div className="flex items-center p-1 rounded-2xl bg-slate-100/90 border border-slate-200/80 max-w-full overflow-x-auto scrollbar-none">
           {RANGES.map((r) => (
             <button
               key={r.value}

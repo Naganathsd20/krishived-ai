@@ -195,7 +195,7 @@ export default function AIAssistantPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-65px)] flex overflow-hidden bg-slate-50/60 dark:bg-slate-950/60 relative">
+    <div className="h-[calc(100dvh-65px)] min-h-[500px] flex overflow-hidden bg-slate-50/60 dark:bg-slate-950/60 relative">
       {/* Toast Notification */}
       <AnimatePresence>
         {toast && (

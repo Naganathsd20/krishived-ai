@@ -59,7 +59,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             disabled={disabled}
             className={cn(
-              "w-full h-11 px-4 text-sm text-slate-900 placeholder:text-slate-400 rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 disabled:opacity-50 disabled:bg-slate-100/50",
+              "w-full h-11 px-4 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 disabled:opacity-50 disabled:bg-slate-100/50",
               isGlass
                 ? "bg-white/75 backdrop-blur-md border border-slate-200/80 shadow-sm hover:border-slate-300"
                 : "bg-slate-50 border border-slate-200 focus:bg-white",

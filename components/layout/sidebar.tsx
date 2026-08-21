@@ -18,7 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
 
   const sidebarContent = (
-    <div className="flex flex-col h-full justify-between p-4 overflow-y-auto">
+    <div className="flex flex-col h-full justify-between p-4 overflow-y-auto min-h-0 flex-1">
       {/* Top Navigation Sections */}
       <div className="space-y-6">
         {DASHBOARD_NAV_ITEMS.map((section, idx) => (

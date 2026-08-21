@@ -186,7 +186,7 @@ export const CropScheduleCard: React.FC<CropScheduleCardProps> = ({
       {/* Footer Action Buttons */}
       <div className="pt-4 flex items-center justify-between gap-2 border-t border-slate-100 mt-4">
         {status === "scheduled" ? (
-          <div className="flex items-center gap-1.5 w-full">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 w-full">
             <Button
               variant="emerald"
               size="sm"

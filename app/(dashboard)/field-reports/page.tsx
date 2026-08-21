@@ -727,7 +727,7 @@ export default function FieldReportsPage() {
               </div>
             </CardHeader>
 
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-4 sm:p-6 space-y-6">
               {/* KPI Grid */}
               <GridContainer cols={4}>
                 {/* Score */}
@@ -815,7 +815,7 @@ export default function FieldReportsPage() {
                 Automated, explainable agronomic risk evaluation derived from your farm activity.
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-4 sm:p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left: Key Reasons */}
                 <div className="bg-white/80 p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">

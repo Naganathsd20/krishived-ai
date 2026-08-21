@@ -188,7 +188,7 @@ export default function GovernmentSchemesPage() {
                   placeholder="Search schemes by name, ministry, or crop purpose (e.g. PM-KISAN, Solar Pump, Crop Insurance)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-24 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  className="w-full pl-10 pr-24 py-2.5 rounded-2xl border border-slate-200 text-base sm:text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                 />
                 <Button
                   type="submit"

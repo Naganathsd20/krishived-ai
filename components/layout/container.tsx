@@ -45,20 +45,20 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       )}
     >
       <div className="space-y-1">
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
             {title}
           </h1>
           {badge}
         </div>
         {description && (
-          <p className="text-sm text-slate-500 max-w-2xl font-normal leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-2xl font-normal leading-relaxed">
             {description}
           </p>
         )}
       </div>
 
-      {action && <div className="flex items-center gap-3 shrink-0">{action}</div>}
+      {action && <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">{action}</div>}
     </div>
   );
 };

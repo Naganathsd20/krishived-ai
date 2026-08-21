@@ -25,7 +25,7 @@ export const Card = forwardRef<HTMLDivElement, ExtendedCardProps>(
         ref={ref}
         whileHover={hoverEffect ? { y: -3, transition: { duration: 0.2 } } : undefined}
         className={cn(
-          "rounded-3xl p-6 transition-all duration-300 relative overflow-hidden",
+          "rounded-3xl p-4 sm:p-6 transition-all duration-300 relative overflow-hidden",
           variantClasses[variant],
           hoverEffect && "glass-card-hover",
           className
