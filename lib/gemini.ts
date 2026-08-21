@@ -277,17 +277,27 @@ export async function generateFarmingChatResponse(
   const { apiKey, genAI } = getGenerativeAIInstance();
 
   const systemInstruction = `You are KrishiMitra, a world-class agronomist and agricultural consultant for KrishiVed AI.
-Before answering, analyze the user's exact intent:
-- If Disease Diagnosis: Identify disease/deficiency, list symptoms, cause, fungicide/pesticide treatment.
-- If Cultivation Guide: Explain step-by-step soil prep, planting, NPK fertilizing, watering, harvesting.
-- If Purchasing/Seed Sourcing: Guide the user to certified seed outlets, KVKs, or government portals.
-- If Ambiguous: Ask one brief clarifying question to confirm their exact intent.
-- If Off-Topic: Politely explain that KrishiMitra specializes in agriculture.
+
+STRICT CROP AND INTENT ACCURACY RULES:
+1. EXACT CROP PRESERVATION:
+   - Identify the exact crop in the user's question (e.g. Wheat, Maize, Paddy, Tomato, Turmeric, Cotton, Sugarcane, Potato, Onion).
+   - NEVER substitute the user's crop for another (e.g. if asked about Wheat, NEVER answer for Maize or Paddy).
+   - If the user explicitly mentions a crop in their current question (e.g. "What about maize?"), that crop OVERRIDES any crop mentioned in previous conversation history.
+   - If no crop is explicitly mentioned in the current question, use the crop context from recent conversation history.
+
+2. DIRECT INTENT ANSWERING:
+   - If asked about IRRIGATION FREQUENCY (e.g. "How often should I irrigate wheat?"), directly answer the watering intervals, critical growth stages (CRI, Tillering, Jointing, Flowering, Milk, Dough), and days between irrigations.
+   - If asked about WATER REQUIREMENT (e.g. "How much water does wheat need per acre?"), directly state the seasonal water volume (e.g. 450–650 mm / 18–26 acre-inches / 1.8–2.6M L/acre) and explain key dependencies (soil type, climate, drip vs flood irrigation).
+   - If asked about FERTILIZER (e.g. "What fertilizer is best for wheat?"), give specific NPK fertilizer dosage (e.g. NPK 120:60:40 kg/ha / DAP + MOP + Urea split) for THAT EXACT CROP, and state that exact dosage depends on soil test results.
+   - If asked about DISEASE / YELLOW LEAVES (e.g. "My tomato leaves are turning yellow"), provide specific symptoms, causes (Early Blight, TLCV, Nitrogen deficiency), and fungicide/pesticide treatment.
+   - DO NOT return a generic farming checklist when asked a specific query.
+
+3. NO FALSE CERTAINTY:
+   - If exact agronomic values depend on location, soil, variety, or growth stage, state the standard range and clearly explain the dependencies.
 
 Formatting Guidelines:
 - Use clear markdown with bold headers (###), bullet points (-), and numbered steps (1.).
-- Provide a direct, detailed answer tailored specifically to the user's exact query.
-- Keep recommendations realistic and actionable for farmers.`;
+- Provide direct, concise, and realistic advice for Indian farming conditions.`;
 
   const formattedHistory = history
     .slice(-6)
@@ -341,126 +351,320 @@ Formatting Guidelines:
     // Debug Log: Error message if Gemini fails
     console.error("[Gemini Assistant ERROR] Error message if Gemini fails:", error?.message || error);
 
-    return generateDynamicQuerySpecificResponse(latestMessage);
+    return generateDynamicQuerySpecificResponse(latestMessage, history);
   }
+}
+
+/**
+ * Helper: Extracts crop name mentioned in a query.
+ */
+function extractCropFromQuery(query: string): string | null {
+  const q = query.toLowerCase();
+  if (/\b(wheat|gehu|gehun)\b/.test(q)) return "Wheat";
+  if (/\b(maize|corn|bhutta|makka|makki)\b/.test(q)) return "Maize";
+  if (/\b(paddy|rice|dhan|chawal)\b/.test(q)) return "Paddy";
+  if (/\b(tomato|tomatoes|tamatar)\b/.test(q)) return "Tomato";
+  if (/\b(turmeric|haldi)\b/.test(q)) return "Turmeric";
+  if (/\b(potato|potatoes|aloo)\b/.test(q)) return "Potato";
+  if (/\b(onion|onions|pyaz)\b/.test(q)) return "Onion";
+  if (/\b(cotton|kapas)\b/.test(q)) return "Cotton";
+  if (/\b(sugarcane|ganna)\b/.test(q)) return "Sugarcane";
+  if (/\b(soybean|soya)\b/.test(q)) return "Soybean";
+  if (/\b(groundnut|peanut|moongfali)\b/.test(q)) return "Groundnut";
+  if (/\b(mustard|sarson)\b/.test(q)) return "Mustard";
+  if (/\b(chickpea|gram|chana)\b/.test(q)) return "Chickpea";
+  if (/\b(chili|chilli|pepper|mirchi)\b/.test(q)) return "Chili";
+  if (/\b(garlic|lahsun)\b/.test(q)) return "Garlic";
+  return null;
+}
+
+/**
+ * Helper: Extracts user's exact intent from query.
+ */
+function extractIntentFromQuery(query: string): "irrigation_frequency" | "water_requirement" | "fertilizer" | "disease" | "cultivation" | "general" {
+  const q = query.toLowerCase();
+
+  if (
+    (q.includes("how often") || q.includes("frequency") || q.includes("interval") || q.includes("how many days") || q.includes("when should i water") || q.includes("when to irrigate")) &&
+    (q.includes("irrigate") || q.includes("water") || q.includes("irrigation"))
+  ) {
+    return "irrigation_frequency";
+  }
+
+  if (
+    (q.includes("how much water") || q.includes("water need") || q.includes("water requirement") || q.includes("liters") || q.includes("acre inch") || q.includes("volume of water")) &&
+    (q.includes("irrigate") || q.includes("water") || q.includes("acre") || q.includes("crop") || q.includes("need"))
+  ) {
+    return "water_requirement";
+  }
+
+  if (
+    q.includes("fertilizer") || q.includes("fertiliser") || q.includes("npk") || q.includes("urea") || q.includes("dap") || q.includes("mop") || q.includes("manure") || q.includes("nutrient") || q.includes("feed")
+  ) {
+    return "fertilizer";
+  }
+
+  if (
+    q.includes("yellow") || q.includes("spot") || q.includes("blight") || q.includes("disease") || q.includes("pest") || q.includes("rot") || q.includes("wilt") || q.includes("fungus") || q.includes("symptom") || q.includes("cure")
+  ) {
+    return "disease";
+  }
+
+  if (q.includes("grow") || q.includes("cultivate") || q.includes("plant") || q.includes("sow") || q.includes("yield")) {
+    return "cultivation";
+  }
+
+  return "general";
 }
 
 /**
  * Generates context-specific, query-tailored agricultural responses
  * if Gemini API call fails or encounters network/key errors.
  */
-function generateDynamicQuerySpecificResponse(query: string): string {
+function generateDynamicQuerySpecificResponse(
+  query: string,
+  history?: Array<{ sender: "user" | "ai"; text: string }>
+): string {
+  // 1. Identify crop from current query
+  let crop = extractCropFromQuery(query);
+
+  // 2. If current query has no crop, look back in history for recent crop context
+  if (!crop && history && Array.isArray(history)) {
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].sender === "user") {
+        const histCrop = extractCropFromQuery(history[i].text);
+        if (histCrop) {
+          crop = histCrop;
+          break;
+        }
+      }
+    }
+  }
+
+  // 3. Identify user intent
+  const intent = extractIntentFromQuery(query);
   const q = query.toLowerCase();
 
-  // 1. Turmeric Cultivation
-  if (q.includes("turmeric") || q.includes("haldi")) {
-    return `### 🌿 Comprehensive Turmeric Cultivation & Care Guide
+  // --- WHEAT LOGIC ---
+  if (crop === "Wheat") {
+    if (intent === "irrigation_frequency") {
+      return `### 💧 Irrigation Frequency & Critical Stages for Wheat
 
-1. **Soil & Climate Requirements:**
-   - **Soil:** Well-drained sandy loam or clay loam with pH 4.5 – 7.5 rich in organic matter.
-   - **Temperature:** Thrives in warm, humid climates (20°C to 35°C).
+Wheat requires **4 to 6 critical irrigations** during its growth cycle (spaced **15 to 20 days apart** depending on soil type and weather).
 
-2. **Rhizome Planting & Seed Rate:**
-   - **Seed Rate:** 800–1000 kg healthy, disease-free mother rhizomes per acre.
-   - **Planting Time:** May to June with early monsoon arrival.
-   - **Spacing:** 30 cm between rows and 15–20 cm between plants on raised beds.
+#### Critical Growth Stages for Wheat Irrigation:
+1. **Crown Root Initiation (CRI) Stage (20–25 days after sowing):** *Most Critical Stage!* Delaying irrigation at CRI causes significant yield reduction.
+2. **Tillering Stage (40–45 days after sowing):** Encourages healthy tiller branching.
+3. **Jointing Stage (60–65 days after sowing):** Supports rapid stem elongation and ear head development.
+4. **Flowering Stage (80–85 days after sowing):** Essential for proper pollination and floret fertility.
+5. **Milk Stage (100–105 days after sowing):** Critical for kernel development and grain weight.
+6. **Dough Stage (115–120 days after sowing):** Light final watering for complete grain filling.
 
-3. **Nutrient & Fertilizer Schedule (Per Acre):**
-   - **FYM / Compost:** 10–12 tonnes during field preparation.
-   - **NPK Ratio:** 25 kg N : 25 kg P₂O₅ : 50 kg K₂O. Apply full Phosphorous as basal dose, and Nitrogen/Potassium in 3 split doses at 30, 60, and 90 days.
+*Soil Factor: Light sandy soils require lighter waterings every 12–15 days, whereas heavy clay loam soils retain moisture longer (every 18–22 days).*`;
+    }
 
-4. **Irrigation & Pest Management:**
-   - **Irrigation:** 15–20 irrigations depending on soil type. Avoid waterlogging to prevent Rhizome Rot (*Pythium aphanidermatum*).`;
+    if (intent === "water_requirement") {
+      return `### 🌊 Total Water Requirement for Wheat (Per Acre)
+
+On average, a wheat crop requires **450 to 650 mm of water** (approx. **18 to 26 acre-inches** or **1.8 to 2.6 million liters per acre**) across its 120–140 day growing season.
+
+#### Key Factors Influencing Water Requirement:
+1. **Irrigation Method:**
+   - **Flood / Border Strip:** Requires ~20–25 acre-inches/acre due to evaporation and seepage losses.
+   - **Sprinkler / Drip Irrigation:** Reduces water requirement to ~14–18 acre-inches/acre (saves 25–35% water).
+2. **Soil Texture:** Light sandy soils need 5–6 lighter irrigations; heavy clay soils need 4–5 deeper irrigations.
+3. **Climate & Growth Stage:** Peak water demand occurs during the Flowering to Grain Milk stage under dry or warm conditions.
+
+*Exact water volume should be adjusted according to soil moisture checks and seasonal rain events.*`;
+    }
+
+    if (intent === "fertilizer") {
+      return `### 🧪 Recommended Fertilizer Schedule for Wheat (Per Acre)
+
+The general recommended NPK nutrient dose for high-yield wheat is **60 kg Nitrogen (N) : 24 kg Phosphorus (P₂O₅) : 16 kg Potash (K₂O) per acre** (equivalent to 150:60:40 kg/ha).
+
+#### Application Schedule:
+1. **Basal Application (At Sowing / Land Preparation):**
+   - **DAP (Di-ammonium Phosphate):** 50 kg/acre
+   - **MOP (Muriate of Potash):** 25–30 kg/acre
+   - **Zinc Sulphate (21%):** 10 kg/acre (prevents seedling chlorosis)
+2. **First Top-Dressing (at CRI Stage ~ 21 days with 1st irrigation):**
+   - **Neem-Coated Urea:** 45 kg/acre
+3. **Second Top-Dressing (at Jointing Stage ~ 45 days with 2nd irrigation):**
+   - **Neem-Coated Urea:** 35 kg/acre
+
+*Note: Exact fertilizer dosage should be confirmed via a recent Soil Test Report. Excess Nitrogen can lead to wheat crop lodging.*`;
+    }
+
+    if (intent === "disease") {
+      return `### 🌱 Wheat Disease & Leaf Problem Diagnostics
+
+#### Common Wheat Health Issues:
+1. **Yellow Rust / Stripe Rust (*Puccinia striiformis*):** Yellow pustules arranged in linear stripes on leaves.
+2. **Brown / Leaf Rust (*Puccinia triticina*):** Small round orange-brown pustules scattered randomly on leaf blades.
+3. **Nitrogen Deficiency:** Pale yellowing starting from tip of older lower leaves.
+
+#### Recommended Treatments:
+- **For Rust Infections:** Spray **Propiconazole 25% EC** @ 1 ml/liter of water OR **Tebuconazole 25.9% EC** @ 1.25 ml/liter immediately upon first symptom appearance.
+- **For Nutrient Deficiency:** Top-dress 20–25 kg/acre Neem-Coated Urea followed by light irrigation.`;
+    }
+
+    return `### 🌾 Wheat Cultivation & Agronomic Overview
+
+1. **Sowing Window & Seed Rate:**
+   - **Optimum Time:** November 1 to November 20 (Rabi season).
+   - **Seed Rate:** 40–45 kg certified seed per acre.
+2. **Soil & Prep:** Well-drained fertile loam (pH 6.0–7.5). Incorporate 6–8 tonnes FYM/acre.
+3. **Water & Nutrition:** 4–6 timely irrigations starting at CRI stage (21 days) with balanced NPK 120:60:40 kg/ha nutrient management.`;
   }
 
-  // 2. Maize Fertilizer Schedule
-  if (q.includes("maize") || q.includes("corn") || (q.includes("fertilizer") && !q.includes("turmeric"))) {
-    return `### 🧪 Recommended Fertilizer Schedule for Maize (Per Acre)
+  // --- MAIZE LOGIC ---
+  if (crop === "Maize") {
+    if (intent === "fertilizer") {
+      return `### 🧪 Recommended Fertilizer Schedule for Maize (Per Acre)
 
 1. **Basal Dose (At Planting):**
-   - **DAP (Di-ammonium Phosphate):** 50 kg
-   - **MOP (Muriate of Potash):** 25 kg
-   - **Zinc Sulphate (21%):** 10 kg (Prevents white bud disease in young seedlings).
+   - **DAP (Di-ammonium Phosphate):** 50 kg/acre
+   - **MOP (Muriate of Potash):** 25 kg/acre
+   - **Zinc Sulphate (21%):** 10 kg/acre (Prevents white bud disease in young maize seedlings).
 
-2. **First Top-Dressing (Knee-High Stage ~ 25-30 Days):**
-   - **Neem-Coated Urea:** 45 kg applied near root zones followed by light irrigation.
+2. **First Top-Dressing (Knee-High Stage ~ 25–30 Days):**
+   - **Neem-Coated Urea:** 45 kg/acre applied near root zones followed by light irrigation.
 
-3. **Second Top-Dressing (Tasseling Stage ~ 50-55 Days):**
-   - **Neem-Coated Urea:** 30 kg
-   - **Foliar Spray:** 19:19:19 (5g/L) + Micronutrient spray for maximum ear filling.`;
+3. **Second Top-Dressing (Tasseling Stage ~ 50–55 Days):**
+   - **Neem-Coated Urea:** 30 kg/acre
+   - **Foliar Spray:** NPK 19:19:19 (5g/L) for maximum cob & kernel development.
+
+*Exact dosage should be tailored based on local soil test results.*`;
+    }
+
+    if (intent === "irrigation_frequency" || intent === "water_requirement") {
+      return `### 💧 Maize Water Requirement & Irrigation Management
+
+Maize requires **500 to 650 mm of water** (approx. **20 to 26 acre-inches**) per acre across its 90–110 day life cycle.
+
+#### Critical Irrigation Stages for Maize:
+1. **Germination & Seedling Stage:** Light initial watering to ensure uniform germination.
+2. **Knee-High Stage (25–30 days):** Maintain moderate soil moisture.
+3. **Tasseling & Silking Stage (50–60 days):** *Most Critical Stage!* Water deficit during silking causes poor cob kernel filling.
+4. **Grain Milk Stage (75–85 days):** Essential for maximum grain weight.
+
+*Avoid waterlogging as maize roots are highly susceptible to oxygen deprivation.*`;
+    }
+
+    return `### 🌽 Maize Cultivation Guide
+
+1. **Season & Seed Rate:** Kharif (June-July) or Rabi (Oct-Nov). Seed rate: 8-10 kg hybrid seeds per acre.
+2. **Spacing:** 60 cm between rows, 20 cm between plants.
+3. **Care:** Protect against Fall Armyworm using Emamectin Benzoate 5% SG (0.4g/L) if observed.`;
   }
 
-  // 3. Tomato Yellow Spots & Blight Disease
-  if (q.includes("yellow") || q.includes("spot") || q.includes("tomato") || q.includes("blight")) {
-    return `### 🌱 Tomato Leaf Spot & Yellowing Diagnostics
+  // --- PADDY LOGIC ---
+  if (crop === "Paddy") {
+    if (intent === "irrigation_frequency" || intent === "water_requirement") {
+      return `### 💧 Paddy (Rice) Water & Irrigation Protocol
 
-1. **Symptom Identification:**
-   - **Early Blight (*Alternaria solani*):** Dark brown target-like concentric rings surrounded by yellow chlorotic halos on lower mature leaves.
-   - **Nitrogen Deficiency:** General yellowing without dark necrotic spots.
+Paddy requires **1200 to 1400 mm of water** (approx. **48 to 56 acre-inches**) per acre due to puddling and standing water practices.
 
-2. **Immediate Fungicidal Treatment:**
-   - Spray **Mancozeb 75% WP** @ 2.5g / liter of water OR **Chlorothalonil** @ 2g / liter.
-   - For systemic protection: Apply **Azoxystrobin 23% EC** @ 1ml / liter.
+#### Irrigation Management:
+1. **Transplanting to Early Tillering (Days 1–20):** Maintain shallow 2–3 cm standing water to support root anchorage and suppress weed growth.
+2. **Alternate Wetting & Drying (AWD):** Allow field water level to recede 15 cm below soil surface before re-flooding. Reduces water use by 30% without affecting grain yield.
+3. **Panicle Initiation & Flowering Stage:** Maintain 3–5 cm standing water continuously.
+4. **Pre-Harvest Drainage:** Drain field completely 10–12 days before harvest to facilitate uniform ripening.`;
+    }
 
-3. **Cultural & Preventive Protocol:**
-   - Prune infected lower foliage up to 1 foot from ground level to encourage airflow.
-   - Avoid overhead watering; switch to drip irrigation.
-   - Mulch around plant bases to prevent soil rain-splash spore transmission.`;
+    if (intent === "fertilizer") {
+      return `### 🧪 Recommended Fertilizer Schedule for Paddy (Per Acre)
+
+1. **Basal Application (During Final Puddling):**
+   - **DAP:** 40–50 kg/acre
+   - **MOP:** 25 kg/acre
+   - **Zinc Sulphate (21%):** 10 kg/acre (prevents Khaira disease).
+2. **Active Tillering Stage (~ 20–25 days after transplanting):**
+   - **Neem-Coated Urea:** 35 kg/acre
+3. **Panicle Initiation Stage (~ 45–50 days after transplanting):**
+   - **Neem-Coated Urea:** 25 kg/acre + **MOP:** 15 kg/acre`;
+    }
+
+    return `### 🌾 Paddy Cultivation Overview
+
+1. **Nursery & Seed Rate:** 15–20 kg/acre for inbred, 6–8 kg/acre for hybrids.
+2. **Transplanting:** 15–20 day old seedlings at 20cm x 15cm spacing.
+3. **Protection:** Monitor for Stem Borer and Bacterial Leaf Blight.`;
   }
 
-  // 4. Weather Impact & Paddy Irrigation
-  if (q.includes("paddy") || q.includes("rice") || q.includes("weather") || q.includes("rain") || q.includes("irrigation")) {
-    return `### 💧 Weather-Based Paddy Water Management Protocol
+  // --- TOMATO LOGIC ---
+  if (crop === "Tomato") {
+    if (intent === "disease") {
+      return `### 🌱 Tomato Leaf Yellowing & Disease Diagnostics
 
-1. **Current Atmospheric & Irrigation Guidelines:**
-   - **Transplanting to Tillering (Days 1–20):** Maintain shallow 2–3 cm standing water.
-   - **Alternate Wetting & Drying (AWD):** Allow field water level to drop 15 cm below soil surface before re-flooding. Reduces water use by 30% and strengthens root depth.
+#### Common Causes of Yellow Tomato Leaves:
+1. **Early Blight (*Alternaria solani*):** Dark brown concentric target spots surrounded by yellow halos on lower leaves.
+2. **Tomato Leaf Curl Virus (TLCV):** Upward curling, yellowing, and stunted plant growth (transmitted by Whiteflies).
+3. **Nitrogen Deficiency:** General uniform pale yellowing on older lower leaves.
 
-2. **Rainfall & Spraying Precautions:**
-   - If rainfall probability is high (>60%), suspend chemical sprays and top-dressing urea to avoid nutrient leaching.
-   - Ensure field drainage outlets are open to prevent submergence injury to young tillers.`;
+#### Recommended Treatments:
+- **For Blight / Fungal Spots:** Spray **Mancozeb 75% WP** (2.5g/L) or **Copper Oxychloride** (2g/L). For systemic control, spray **Azoxystrobin 23% EC** (1ml/L).
+- **For Whitefly Vector Control:** Spray **Imidacloprid 17.8% SL** (0.5ml/L) or Neem Oil (5ml/L).
+- **Cultural Care:** Prune lower infected leaves up to 1 foot from ground and use drip irrigation.`;
+    }
+
+    return `### 🍅 Tomato Cultivation & Management Guide
+
+1. **Irrigation:** Requires **400–600 mm** water. Drip irrigation (30–45 mins daily or alternate days) prevents fruit cracking and blossom end rot.
+2. **Fertilization:** Basal FYM (10t/acre) + NPK 19:19:19 during vegetative stage, switching to 13:0:45 + Calcium Nitrate during fruiting.`;
   }
 
-  // 5. Government Farming Schemes
+  // --- TURMERIC LOGIC ---
+  if (crop === "Turmeric") {
+    return `### 🌿 Turmeric Cultivation & Care Guide
+
+1. **Soil & Seed Rate:** Well-drained sandy loam (pH 5.5–7.5). Seed rate: 800–1000 kg mother rhizomes per acre.
+2. **Fertilizers (Per Acre):** FYM 10-12 tonnes + NPK 25kg N : 25kg P₂O₅ : 50kg K₂O in 3 split doses at 30, 60, and 90 days.
+3. **Watering:** 15–20 irrigations. Avoid waterlogging to prevent Rhizome Rot (*Pythium*).`;
+  }
+
+  // --- SCHEMES LOGIC ---
   if (q.includes("scheme") || q.includes("government") || q.includes("subsidy") || q.includes("pm-kisan") || q.includes("pmfby") || q.includes("kcc")) {
     return `### 🏛 Key Government Schemes for Farmers
 
 1. **PM-KISAN (Pradhan Mantri Kisan Samman Nidhi):**
-   - Direct income support of **₹6,000 per year** in 3 equal installments of ₹2,000 directly into farmer bank accounts.
-
+   - Direct income support of **₹6,000 per year** in 3 equal installments of ₹2,000.
 2. **PMFBY (PM Fasal Bima Yojana):**
-   - Crop insurance at minimal premium rates (1.5% for Rabi, 2.0% for Kharif, 5% for commercial/horticultural crops) protecting against natural disasters.
-
-3. **Kisan Credit Card (KCC) & Interest Subvention:**
-   - Short-term crop loans up to **₹3 Lakhs** at an effective interest rate of 4% per annum upon prompt repayment.
-
-4. **Sub-Mission on Agricultural Mechanization (SMAM):**
-   - 40% to 50% subsidy on purchase of tractors, rotavators, power tillers, and drones through Custom Hiring Centers (CHCs).`;
+   - Crop insurance at minimal premium rates (1.5% Rabi, 2.0% Kharif).
+3. **Kisan Credit Card (KCC):**
+   - Short-term crop loans up to **₹3 Lakhs** at an effective 4% interest rate upon prompt repayment.`;
   }
 
-  // 6. Crop Selection / Seasonal Growing Guide
-  if (q.includes("which crop") || q.includes("crop selection") || q.includes("grow this season") || q.includes("season")) {
-    return `### 🌾 Seasonal Crop Selection Advisory
-
-1. **Kharif (Monsoon Season):**
-   - **High Return:** Hybrid Paddy, Maize, Cotton, Soybean.
-   - **Low Water Demand:** Pigeonpea (Tur), Green Gram (Moong), Pearl Millet (Bajra).
-
-2. **Rabi (Winter Season):**
-   - **Cereals & Cash Crops:** Wheat, Mustard, Chickpea (Gram), Potato.
-
-3. **Key Recommendation Steps:**
-   - Test soil pH (ideal 6.5 - 7.5) and organic carbon before final crop selection.
-   - Match crop water requirements to your regional irrigation infrastructure.`;
-  }
-
-  // 7. General Dynamic Subject Handler for any other prompt
+  // --- GENERIC CROP-NEUTRAL FALLBACK ---
   const cleanSubject = query.replace(/(how|what|why|can|i|do|you|suggest|recommend|tell|me|about|the|for)/gi, "").trim();
+
+  if (intent === "fertilizer") {
+    return `### 🧪 General Fertilizer Recommendation Principles
+
+To receive the exact fertilizer formula, please mention your specific **crop name** (e.g., Wheat, Maize, Paddy, Tomato, Cotton).
+
+#### Core Fertilizer Guidelines:
+1. **Soil Test First:** Conduct a soil test to check N-P-K balance, pH, and micronutrients (Zinc, Boron).
+2. **Basal Dose:** Apply full Phosphorus (DAP/SSP) and Potash (MOP) during field preparation or sowing.
+3. **Top Dressing:** Apply Nitrogen (Urea) in 2–3 split doses at key vegetative growth stages.`;
+  }
+
+  if (intent === "irrigation_frequency" || intent === "water_requirement") {
+    return `### 💧 General Irrigation & Water Management
+
+To get the precise irrigation schedule or water quantity per acre, please specify your **crop name** (e.g., Wheat, Paddy, Maize, Tomato).
+
+#### General Watering Rules:
+1. **Critical Stages:** Irrigate during germination, flowering, and grain/fruit filling stages.
+2. **Method:** Drip irrigation reduces water use by 30–40% compared to surface flooding.
+3. **Soil Type:** Sandy soils require frequent light waterings; clay soils require deeper, less frequent irrigations.`;
+  }
 
   return `### 🌾 KrishiMitra Advice for: "${query}"
 
 1. **Management Overview:**
-   - For optimal cultivation of **${cleanSubject || "your crop"}**, ensure soil testing for N-P-K balance and organic matter content prior to planting.
+   - For optimal cultivation of **${crop || cleanSubject || "your crop"}**, ensure soil testing for N-P-K balance and organic matter content prior to planting.
 
 2. **Core Agronomic Practices:**
    - **Soil Preparation:** Incorporate 8-10 tonnes of FYM/compost per acre along with bio-fertilizers (*Azotobacter* / *PSB*).
