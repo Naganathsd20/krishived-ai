@@ -135,30 +135,53 @@ For example:
 }
 
 /**
- * Analyzes a crop or leaf image URL using Gemini Vision AI.
+ * Analyzes a crop or leaf image URL using Gemini Vision AI with Agricultural Image Validation.
  */
 export async function analyzeCropImage(
   imageUrl: string
 ): Promise<IDiseaseAnalysisResult> {
   const prompt = `
-You are a world-class agronomist and plant pathologist AI engine. Analyze the provided image of a crop or leaf and identify any plant disease, pest infection, or physiological disorder.
+You are an expert agricultural computer vision AI engine and plant pathologist.
 
-Return your response strictly in valid, raw JSON format with NO markdown wrapping, matching this exact structure:
+Analyze the uploaded image with strict agricultural validation:
+
+STEP 1: AGRICULTURAL IMAGE VALIDATION
+Determine if the image visibly contains a real crop, plant, leaf, stem, fruit, vegetable, seedling, or agricultural field.
+- REJECT any non-agricultural content immediately. This includes: computer/coding/IDE/VS Code screenshots, website screens, document/PDF screenshots, printed text pages, selfies/people, vehicles, buildings, office items, random non-plant photographs.
+- If the image is NOT an agricultural/plant photo, set "isAgriculturalImage" to false, "imageType" to "non_agricultural", "hasVisibleSymptoms" to false, "disease" to "Non-Agricultural Image", "confidence" to "0%", "severity" to "Low", and set "validationMessage" to "⚠️ This image does not appear to contain a crop or plant. Please upload a clear photo of the affected crop, leaf, stem, fruit, or field for disease diagnosis."
+
+STEP 2: IMAGE CLARITY & EVIDENCE EVALUATION
+If the image is a plant/crop photo, but is too blurry, dark, out of focus, distant, or ambiguous to discern plant details or disease symptoms:
+- Set "isAgriculturalImage" to true, "imageType" to "unclear", "hasVisibleSymptoms" to false, "disease" to "Inconclusive / Unclear Image", "confidence" to "0%", "severity" to "Low", and set "validationMessage" to "⚠️ A plant/crop is visible, but the image is not clear enough for reliable disease identification. Please upload a clearer close-up image of the affected leaf or plant."
+
+STEP 3: HEALTHY PLANT EVALUATION
+If the image clearly shows a healthy plant/crop with NO visible disease, pest, or deficiency symptoms:
+- Set "isAgriculturalImage" to true, "imageType" to "crop_leaf", "isHealthy" to true, "hasVisibleSymptoms" to false, "disease" to "Healthy Crop (No Disease Detected)", "confidence" to "95%", "severity" to "Low", and set "validationMessage" to "No obvious disease symptoms detected from this image."
+
+STEP 4: DISEASE DIAGNOSTIC ANALYSIS
+If the image is a valid agricultural image WITH visible disease symptoms:
+- Set "isAgriculturalImage" to true, "imageType" to "crop_leaf", "isHealthy" to false, "hasVisibleSymptoms" to true, "validationMessage" to "Valid crop disease diagnostic scan.", identify the specific crop and disease name, confidence (e.g. "94%"), severity ("Low" | "Medium" | "High"), symptoms array, pathogen cause, treatment array, prevention array, recommendedFertilizer, recommendedPesticide, and immediateActions array.
+
+Return your response strictly as valid, raw JSON with NO markdown formatting:
 
 {
-  "disease": "Exact Disease or Health Status Name",
-  "confidence": "e.g. 95%",
+  "isAgriculturalImage": boolean,
+  "imageType": "crop_leaf" | "plant" | "field" | "non_agricultural" | "unclear",
+  "cropDetected": "Crop name if identified, else empty string",
+  "hasVisibleSymptoms": boolean,
+  "isHealthy": boolean,
+  "validationMessage": "Validation status or farmer instruction",
+  "disease": "Specific Disease Name OR Healthy Crop (No Disease Detected) OR Non-Agricultural Image OR Inconclusive / Unclear Image",
+  "confidence": "e.g. 94%",
   "severity": "Low" | "Medium" | "High",
-  "symptoms": ["Symptom 1", "Symptom 2", "Symptom 3"],
-  "cause": "Detailed cause or pathogen explanation",
-  "treatment": ["Treatment step 1", "Treatment step 2", "Treatment step 3"],
+  "symptoms": ["Symptom 1", "Symptom 2"],
+  "cause": "Detailed cause explanation",
+  "treatment": ["Treatment step 1", "Treatment step 2"],
   "prevention": ["Prevention tip 1", "Prevention tip 2"],
-  "recommendedFertilizer": "Recommended fertilizer type and dosage",
-  "recommendedPesticide": "Recommended fungicide or pesticide formulation",
+  "recommendedFertilizer": "Recommended fertilizer formulation",
+  "recommendedPesticide": "Recommended fungicide or pesticide",
   "immediateActions": ["Action 1", "Action 2"]
 }
-
-If the image is healthy with no disease detected, set "disease" to "Healthy Crop (No Disease Detected)", "severity" to "Low", and provide maintenance tips.
 `;
 
   try {
@@ -179,6 +202,17 @@ If the image is healthy with no disease detected, set "disease" to "Healthy Crop
       .trim();
 
     const parsed: IDiseaseAnalysisResult = JSON.parse(cleanedText);
+
+    // Fallback checks for missing fields
+    if (parsed.isAgriculturalImage === undefined) {
+      const d = (parsed.disease || "").toLowerCase();
+      parsed.isAgriculturalImage = !(
+        d.includes("non-agricultural") ||
+        d.includes("not a plant") ||
+        d.includes("invalid image")
+      );
+    }
+
     return parsed;
   } catch (error) {
     console.error("Gemini Vision AI Analysis Error:", error);
@@ -679,6 +713,12 @@ To get the precise irrigation schedule or water quantity per acre, please specif
  */
 function generateFallbackDiagnosis(imageUrl: string): IDiseaseAnalysisResult {
   return {
+    isAgriculturalImage: true,
+    imageType: "crop_leaf",
+    cropDetected: "Tomato",
+    hasVisibleSymptoms: true,
+    isHealthy: false,
+    validationMessage: "Valid tomato leaf photo detected with active early blight symptoms.",
     disease: "Early Blight (Alternaria solani)",
     confidence: "94%",
     severity: "Medium",

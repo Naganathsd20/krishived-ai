@@ -69,16 +69,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Perform Gemini AI Vision Analysis
+    // 1. Perform Gemini AI Vision Analysis with Agricultural Image Validation
     const aiResult = await analyzeCropImage(imageUrl.trim());
 
-    // 2. Connect to MongoDB
+    // 2. If the image is NOT an agricultural/crop image, return validation rejection immediately
+    if (aiResult.isAgriculturalImage === false) {
+      return NextResponse.json({
+        success: true,
+        isAgriculturalImage: false,
+        analysis: aiResult,
+      });
+    }
+
+    // 3. Connect to MongoDB
     await connectDB();
 
-    // 3. Save Analysis Record to MongoDB
+    // 4. Save Valid Agricultural Analysis Record to MongoDB
     const analysisRecord = await DiseaseAnalysis.create({
       clerkId: userId,
       imageUrl: imageUrl.trim(),
+      isAgriculturalImage: true,
+      imageType: aiResult.imageType || "crop_leaf",
+      cropDetected: aiResult.cropDetected || "",
+      hasVisibleSymptoms: aiResult.hasVisibleSymptoms ?? true,
+      isHealthy: aiResult.isHealthy ?? false,
+      validationMessage: aiResult.validationMessage || "",
       disease: aiResult.disease,
       confidence: aiResult.confidence,
       severity: aiResult.severity,
@@ -93,6 +108,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      isAgriculturalImage: true,
       analysis: analysisRecord,
     });
   } catch (error) {

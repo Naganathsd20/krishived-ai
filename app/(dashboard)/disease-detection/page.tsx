@@ -485,159 +485,298 @@ export default function DiseaseDetectionPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
-                {/* Result Header & Status Card */}
-                <Card variant="glass" className="border-emerald-200 bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/20 shadow-xl overflow-hidden">
-                  <div className="p-6 sm:p-8 space-y-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 shrink-0">
-                          <Activity className="w-7 h-7" />
+                {/* STATE 1: NON-AGRICULTURAL IMAGE REJECTION */}
+                {analysisResult.isAgriculturalImage === false || analysisResult.imageType === "non_agricultural" ? (
+                  <Card variant="glass" className="border-amber-300 bg-amber-50/90 shadow-xl overflow-hidden">
+                    <CardContent className="p-6 sm:p-8 space-y-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shrink-0">
+                          <ShieldAlert className="w-6 h-6" />
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-                              Gemini Vision AI Diagnosis
-                            </span>
-                            <span className="text-xs text-slate-400">• Confidence: {analysisResult.confidence}</span>
-                          </div>
-                          <h2 className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                            {analysisResult.disease}
-                          </h2>
+                        <div className="space-y-1">
+                          <Badge variant="warning" className="text-xs font-bold mb-1">
+                            ⚠️ Agricultural Image Validation Notice
+                          </Badge>
+                          <h3 className="text-xl font-extrabold text-amber-950">
+                            Non-Agricultural Image Detected
+                          </h3>
+                          <p className="text-sm font-semibold text-amber-900 leading-relaxed">
+                            {analysisResult.validationMessage ||
+                              "⚠️ This image does not appear to contain a crop or plant. Please upload a clear photo of the affected crop, leaf, stem, fruit, or field for disease diagnosis."}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {getSeverityBadge(analysisResult.severity)}
-                        <Badge variant="glass" className="bg-emerald-100 text-emerald-800 border-emerald-300">
-                          Saved to MongoDB
+                      <div className="p-4 rounded-2xl bg-white/90 border border-amber-200 space-y-3">
+                        <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                          Image Guidelines for Crop Disease Scanning:
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-700">
+                          <div className="space-y-1.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                            <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              <span>Accepted Crop Images:</span>
+                            </span>
+                            <ul className="space-y-1 text-emerald-800 text-[11px] list-disc list-inside">
+                              <li>Leaves with visible spots or yellowing</li>
+                              <li>Plant stems, stalks, or root zones</li>
+                              <li>Fruits, vegetables, or pod lesions</li>
+                              <li>Agricultural field or canopy photos</li>
+                            </ul>
+                          </div>
+
+                          <div className="space-y-1.5 p-3 rounded-xl bg-rose-50 border border-rose-200">
+                            <span className="font-bold text-rose-900 flex items-center gap-1.5">
+                              <AlertCircle className="w-4 h-4 text-rose-600" />
+                              <span>Rejected Non-Agricultural Images:</span>
+                            </span>
+                            <ul className="space-y-1 text-rose-800 text-[11px] list-disc list-inside">
+                              <li>Code / IDE / programming screenshots</li>
+                              <li>Website, document, or PDF screenshots</li>
+                              <li>Vehicles, buildings, selfies, or people</li>
+                              <li>Non-plant objects or text-only images</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="emerald" onClick={handleRemoveImage} leftIcon={<UploadCloud className="w-4 h-4" />}>
+                          Upload Crop Photograph
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : analysisResult.imageType === "unclear" || (!analysisResult.hasVisibleSymptoms && !analysisResult.isHealthy && (analysisResult.disease || "").toLowerCase().includes("inconclusive")) ? (
+                  /* STATE 2: INCONCLUSIVE / UNCLEAR PLANT IMAGE */
+                  <Card variant="glass" className="border-amber-200 bg-amber-50/70 shadow-xl">
+                    <CardContent className="p-6 sm:p-8 space-y-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shrink-0">
+                          <AlertCircle className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <Badge variant="warning" className="text-xs font-bold mb-1">
+                            ⚠️ Insufficient Visual Evidence
+                          </Badge>
+                          <h3 className="text-xl font-extrabold text-amber-950">
+                            Image Unclear for Disease Diagnostics
+                          </h3>
+                          <p className="text-sm font-semibold text-amber-900 leading-relaxed">
+                            {analysisResult.validationMessage ||
+                              "⚠️ A plant/crop is visible, but the image is not clear enough for reliable disease identification. Please upload a clearer close-up image of the affected leaf or plant."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-white/90 border border-amber-200 text-xs text-slate-700 space-y-2">
+                        <h4 className="font-bold text-slate-900">Tips for a Clearer Diagnostic Photo:</h4>
+                        <ul className="space-y-1 text-slate-600 list-disc list-inside">
+                          <li>Hold your camera close to the affected leaf or stem (~15–30 cm distance).</li>
+                          <li>Ensure steady focus so leaf veins and spots are sharp and distinct.</li>
+                          <li>Take photos in bright, indirect natural daylight.</li>
+                        </ul>
+                      </div>
+
+                      <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="emerald" onClick={handleRemoveImage} leftIcon={<Camera className="w-4 h-4" />}>
+                          Upload Clearer Close-Up
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : analysisResult.isHealthy || (analysisResult.disease || "").toLowerCase().includes("healthy") ? (
+                  /* STATE 3: HEALTHY PLANT */
+                  <Card variant="glass" className="border-emerald-200 bg-gradient-to-br from-white via-emerald-50/40 to-teal-50/20 shadow-xl overflow-hidden">
+                    <CardContent className="p-6 sm:p-8 space-y-6">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-emerald-100 pb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 shrink-0">
+                            <CheckCircle2 className="w-7 h-7" />
+                          </div>
+                          <div>
+                            <Badge variant="emerald" className="text-xs font-bold mb-1">
+                              Healthy Plant Scan
+                            </Badge>
+                            <h2 className="text-2xl font-extrabold text-slate-900">
+                              {analysisResult.disease || "Healthy Crop (No Disease Symptoms Detected)"}
+                            </h2>
+                          </div>
+                        </div>
+                        <Badge variant="emerald" className="px-3.5 py-1 text-xs">
+                          Confidence: {analysisResult.confidence || "95%"}
                         </Badge>
                       </div>
-                    </div>
 
-                    {/* Image Preview & Immediate Action Highlight */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-md max-h-56">
-                        <img
-                          src={analysisResult.imageUrl}
-                          alt={analysisResult.disease}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-
-                      {/* Immediate Actions */}
-                      <div className="md:col-span-2 p-5 rounded-2xl bg-emerald-900 text-white space-y-3 shadow-md">
-                        <div className="flex items-center gap-2 text-emerald-300 font-bold text-sm">
-                          <Zap className="w-4 h-4 text-amber-400" />
-                          <span>Immediate Action Plan for Farmer</span>
-                        </div>
-                        <ul className="space-y-2">
-                          {analysisResult.immediateActions.map((action, idx) => (
-                            <li key={idx} className="flex items-start gap-2.5 text-xs text-emerald-100 leading-relaxed">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                              <span>{action}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* Diagnosis Overview Grid */}
-                    <GridContainer cols={2}>
-                      {/* Symptoms Card */}
-                      <div className="p-5 rounded-2xl bg-white/80 border border-slate-200/80 shadow-xs space-y-3">
-                        <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                          <Leaf className="w-4 h-4 text-emerald-600" />
-                          <span>Observed Symptoms</span>
-                        </div>
-                        <ul className="space-y-1.5">
-                          {analysisResult.symptoms.map((sym, i) => (
-                            <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
-                              <span>{sym}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Pathogen Cause Card */}
-                      <div className="p-5 rounded-2xl bg-white/80 border border-slate-200/80 shadow-xs space-y-3">
-                        <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                          <ShieldAlert className="w-4 h-4 text-amber-600" />
-                          <span>Root Cause & Pathogen</span>
-                        </div>
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          {analysisResult.cause}
-                        </p>
-                      </div>
-                    </GridContainer>
-
-                    {/* Treatment & Prevention Grid */}
-                    <GridContainer cols={2}>
-                      {/* Recommended Treatment */}
-                      <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-3">
-                        <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
-                          <Pill className="w-4 h-4 text-emerald-600" />
-                          <span>Recommended Treatment Steps</span>
-                        </div>
-                        <ol className="space-y-2">
-                          {analysisResult.treatment.map((step, i) => (
-                            <li key={i} className="text-xs text-emerald-900 flex items-start gap-2">
-                              <span className="font-bold text-emerald-700">{i + 1}.</span>
-                              <span>{step}</span>
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-
-                      {/* Prevention Strategy */}
-                      <div className="p-5 rounded-2xl bg-teal-50/70 border border-teal-200/80 space-y-3">
-                        <div className="flex items-center gap-2 text-teal-950 font-bold text-sm">
-                          <Sprout className="w-4 h-4 text-teal-600" />
-                          <span>Prevention & Cultural Control</span>
-                        </div>
-                        <ul className="space-y-2">
-                          {analysisResult.prevention.map((prev, i) => (
-                            <li key={i} className="text-xs text-teal-900 flex items-start gap-2">
-                              <Check className="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5" />
-                              <span>{prev}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </GridContainer>
-
-                    {/* Recommended Products Card */}
-                    <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                          Recommended Fertilizer Formulation
+                      <div className="p-5 rounded-2xl bg-emerald-50/90 border border-emerald-200 text-emerald-950 text-sm font-semibold leading-relaxed flex items-center gap-3">
+                        <Sprout className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <span>
+                          {analysisResult.validationMessage || "No obvious disease symptoms detected from this image. Your crop appears healthy!"}
                         </span>
-                        <p className="text-xs font-bold text-slate-800">
-                          {analysisResult.recommendedFertilizer}
-                        </p>
                       </div>
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                          Recommended Fungicide / Pesticide
-                        </span>
-                        <p className="text-xs font-bold text-emerald-700">
-                          {analysisResult.recommendedPesticide}
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* Action Bar */}
-                    <div className="flex justify-end gap-3 pt-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleRemoveImage}
-                      >
-                        Scan Another Crop Photo
-                      </Button>
+                      <div className="flex justify-end gap-3 pt-2">
+                        <Button variant="emerald" onClick={handleRemoveImage}>
+                          Scan Another Crop Photo
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  /* STATE 4: VALID AGRICULTURAL IMAGE WITH DISEASE DIAGNOSIS */
+                  <Card variant="glass" className="border-emerald-200 bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/20 shadow-xl overflow-hidden">
+                    <div className="p-6 sm:p-8 space-y-6">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 shrink-0">
+                            <Activity className="w-7 h-7" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                                Gemini Vision AI Diagnosis
+                              </span>
+                              <span className="text-xs text-slate-400">• Confidence: {analysisResult.confidence}</span>
+                            </div>
+                            <h2 className="text-2xl font-extrabold text-slate-900 mt-0.5">
+                              {analysisResult.disease}
+                            </h2>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {getSeverityBadge(analysisResult.severity)}
+                          <Badge variant="glass" className="bg-emerald-100 text-emerald-800 border-emerald-300">
+                            Saved to MongoDB
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Image Preview & Immediate Action Highlight */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-md max-h-56">
+                          <img
+                            src={analysisResult.imageUrl}
+                            alt={analysisResult.disease}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Immediate Actions */}
+                        <div className="md:col-span-2 p-5 rounded-2xl bg-emerald-900 text-white space-y-3 shadow-md">
+                          <div className="flex items-center gap-2 text-emerald-300 font-bold text-sm">
+                            <Zap className="w-4 h-4 text-amber-400" />
+                            <span>Immediate Action Plan for Farmer</span>
+                          </div>
+                          <ul className="space-y-2">
+                            {analysisResult.immediateActions?.map((action, idx) => (
+                              <li key={idx} className="flex items-start gap-2.5 text-xs text-emerald-100 leading-relaxed">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                                <span>{action}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      {/* Diagnosis Overview Grid */}
+                      <GridContainer cols={2}>
+                        {/* Symptoms Card */}
+                        <div className="p-5 rounded-2xl bg-white/80 border border-slate-200/80 shadow-xs space-y-3">
+                          <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                            <Leaf className="w-4 h-4 text-emerald-600" />
+                            <span>Observed Symptoms</span>
+                          </div>
+                          <ul className="space-y-1.5">
+                            {analysisResult.symptoms?.map((sym, i) => (
+                              <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
+                                <span>{sym}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Pathogen Cause Card */}
+                        <div className="p-5 rounded-2xl bg-white/80 border border-slate-200/80 shadow-xs space-y-3">
+                          <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                            <ShieldAlert className="w-4 h-4 text-amber-600" />
+                            <span>Root Cause & Pathogen</span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            {analysisResult.cause}
+                          </p>
+                        </div>
+                      </GridContainer>
+
+                      {/* Treatment & Prevention Grid */}
+                      <GridContainer cols={2}>
+                        {/* Recommended Treatment */}
+                        <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-3">
+                          <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
+                            <Pill className="w-4 h-4 text-emerald-600" />
+                            <span>Recommended Treatment Steps</span>
+                          </div>
+                          <ol className="space-y-2">
+                            {analysisResult.treatment?.map((step, i) => (
+                              <li key={i} className="text-xs text-emerald-900 flex items-start gap-2">
+                                <span className="font-bold text-emerald-700">{i + 1}.</span>
+                                <span>{step}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+
+                        {/* Prevention Strategy */}
+                        <div className="p-5 rounded-2xl bg-teal-50/70 border border-teal-200/80 space-y-3">
+                          <div className="flex items-center gap-2 text-teal-950 font-bold text-sm">
+                            <Sprout className="w-4 h-4 text-teal-600" />
+                            <span>Prevention & Cultural Control</span>
+                          </div>
+                          <ul className="space-y-2">
+                            {analysisResult.prevention?.map((prev, i) => (
+                              <li key={i} className="text-xs text-teal-900 flex items-start gap-2">
+                                <Check className="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5" />
+                                <span>{prev}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </GridContainer>
+
+                      {/* Recommended Products Card */}
+                      <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                            Recommended Fertilizer Formulation
+                          </span>
+                          <p className="text-xs font-bold text-slate-800">
+                            {analysisResult.recommendedFertilizer}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                            Recommended Fungicide / Pesticide
+                          </span>
+                          <p className="text-xs font-bold text-emerald-700">
+                            {analysisResult.recommendedPesticide}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action Bar */}
+                      <div className="flex justify-end gap-3 pt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleRemoveImage}
+                        >
+                          Scan Another Crop Photo
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+                )}
               </motion.div>
             )}
           </CardContent>

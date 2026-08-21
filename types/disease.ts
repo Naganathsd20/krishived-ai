@@ -1,4 +1,10 @@
 export interface IDiseaseAnalysisResult {
+  isAgriculturalImage: boolean;
+  imageType?: "crop_leaf" | "plant" | "field" | "non_agricultural" | "unclear";
+  cropDetected?: string;
+  hasVisibleSymptoms?: boolean;
+  isHealthy?: boolean;
+  validationMessage?: string;
   disease: string;
   confidence: string;
   severity: "Low" | "Medium" | "High";
@@ -17,3 +23,4 @@ export interface IDiseaseAnalysisDocument extends IDiseaseAnalysisResult {
   imageUrl: string;
   createdAt?: string | Date;
 }
+

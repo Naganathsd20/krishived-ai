@@ -46,6 +46,140 @@ import { ISoilRecommendationDocument, ISoilRecommendationResult } from "@/types/
 import { IWeatherData } from "@/types/weather";
 import { MongoUserProfile } from "@/types";
 
+// Helper functions for validating telemetry data & crop-specific agronomics
+function isInvalidString(str: string | null | undefined): boolean {
+  if (!str || typeof str !== "string") return true;
+  const cleaned = str.trim().toUpperCase();
+  return (
+    !cleaned ||
+    cleaned === "N/A" ||
+    cleaned === "NA" ||
+    cleaned === "DATA UNAVAILABLE" ||
+    cleaned === "UNDEFINED" ||
+    cleaned === "NULL"
+  );
+}
+
+function getValidString(...candidates: (string | null | undefined)[]): string | null {
+  for (const c of candidates) {
+    if (!isInvalidString(c)) {
+      return (c as string).trim();
+    }
+  }
+  return null;
+}
+
+function getCropFertilizerAdvisory(cropName: string): string {
+  const c = cropName.toLowerCase();
+  if (c.includes("wheat") || c.includes("mustard")) {
+    return "Apply NPK 120:60:40 kg/ha (DAP 50 kg/acre + MOP 25 kg/acre basal dose, followed by Neem-coated Urea top-dressing in 2 splits at CRI and Jointing stages).";
+  }
+  if (c.includes("maize") || c.includes("corn") || c.includes("soybean")) {
+    return "Apply DAP 50 kg/acre + MOP 25 kg/acre + Zinc Sulphate 10 kg/acre basal dose; top-dress Urea 45 kg at Knee-High and 30 kg at Tasseling stage.";
+  }
+  if (c.includes("paddy") || c.includes("rice")) {
+    return "Apply DAP 50 kg/acre + Zinc Sulphate 10 kg/acre at final puddling; top-dress Urea 35 kg at tillering and 25 kg at panicle initiation.";
+  }
+  if (c.includes("cotton") || c.includes("sorghum") || c.includes("jowar")) {
+    return "Apply NPK 80:40:40 kg/ha with basal DAP 50 kg/acre + MOP 25 kg/acre; top-dress Urea at 30 and 60 days post-sowing.";
+  }
+  if (c.includes("tomato")) {
+    return "Apply FYM 10 t/acre + NPK 19:19:19 during vegetative stage, switching to 13:0:45 + Calcium Nitrate during fruit setting.";
+  }
+  if (c.includes("turmeric")) {
+    return "Apply FYM 10–12 t/acre + NPK 25:25:50 kg/acre in 3 split doses at 30, 60, and 90 days after rhizome planting.";
+  }
+  return "Incorporate 8–10 tonnes FYM/acre during land prep + balanced NPK 10-26-26 as per local soil test guidelines.";
+}
+
+function getCropIrrigationAdvisory(cropName: string): string {
+  const c = cropName.toLowerCase();
+  if (c.includes("wheat") || c.includes("mustard")) {
+    return "Apply 4 to 6 critical irrigations at 15 to 20 day intervals, starting at Crown Root Initiation (CRI stage ~21 days after sowing).";
+  }
+  if (c.includes("maize") || c.includes("corn") || c.includes("soybean")) {
+    return "Maintain moderate soil moisture. Irrigate during critical Knee-High (25-30 days) and Tasseling/Silking (50-60 days) stages. Avoid standing water.";
+  }
+  if (c.includes("paddy") || c.includes("rice")) {
+    return "Maintain 2–3 cm standing water during early tillering, then adopt Alternate Wetting & Drying (AWD) to conserve water while maintaining yield.";
+  }
+  if (c.includes("cotton") || c.includes("sorghum") || c.includes("jowar")) {
+    return "Provide 3 to 5 irrigations at critical square formation and flowering stages. Avoid excess moisture near harvesting.";
+  }
+  if (c.includes("tomato")) {
+    return "Adopt controlled drip micro-irrigation (30–45 mins daily) to maintain 60–70% soil moisture and prevent fruit cracking.";
+  }
+  if (c.includes("turmeric")) {
+    return "Provide 15 to 20 irrigations at 7 to 10 day intervals. Ensure raised beds and proper field drainage to prevent rhizome rot.";
+  }
+  return "Adopt controlled drip micro-irrigation during early morning hours to maintain 60–70% field capacity moisture.";
+}
+
+function getCropAlternativeOptions(primaryCropName: string): string[] {
+  const c = primaryCropName.toLowerCase();
+  if (c.includes("wheat") || c.includes("mustard")) {
+    return ["Chickpea (Gram)", "Mustard", "Barley"];
+  }
+  if (c.includes("maize") || c.includes("soybean")) {
+    return ["Pigeonpea (Tur)", "Groundnut", "Chickpea (Gram)"];
+  }
+  if (c.includes("paddy") || c.includes("rice")) {
+    return ["Hybrid Maize", "Soybean", "Black Gram (Urad)"];
+  }
+  if (c.includes("cotton") || c.includes("sorghum") || c.includes("jowar")) {
+    return ["Pigeonpea (Tur)", "Groundnut", "Sunflower"];
+  }
+  if (c.includes("tomato")) {
+    return ["Chili", "Brinjal", "Capsicum"];
+  }
+  if (c.includes("turmeric")) {
+    return ["Ginger", "Garlic", "Onion"];
+  }
+  return ["Pigeonpea (Tur)", "Groundnut", "Chickpea (Gram)"];
+}
+
+/**
+ * Project standard agronomic suitability engine (lib/gemini.ts classification standard).
+ * Calculates recommended crop based on location climate telemetry.
+ */
+function calculateTelemetryRecommendedCrop(
+  temperature: number,
+  humidity: number,
+  rainProbability: number
+): string {
+  const isWarm = temperature >= 25;
+  const isHumid = humidity >= 60;
+  const isHighRain = rainProbability >= 40;
+
+  if (isWarm) {
+    if (isHumid) {
+      return isHighRain ? "Paddy & Hybrid Rice" : "Soybean & Hybrid Maize";
+    } else {
+      return "Cotton & Sorghum (Jowar)";
+    }
+  } else {
+    return "Wheat & Mustard";
+  }
+}
+
+// List of supported farm locations
+const SUPPORTED_LOCATIONS = [
+  "Pune",
+  "Karwar",
+  "Dharwad",
+  "Bengaluru",
+  "Mangaluru",
+  "Belagavi",
+  "Hubballi",
+  "Mumbai",
+  "Nashik",
+  "Mysuru",
+  "Delhi",
+  "Hyderabad",
+  "Chennai",
+  "Kolkata",
+];
+
 export default function CropAdvisoryPage() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
   const [dbUser, setDbUser] = useState<MongoUserProfile | null>(null);
@@ -54,6 +188,8 @@ export default function CropAdvisoryPage() {
   const [soilHistory, setSoilHistory] = useState<ISoilRecommendationDocument[]>([]);
   const [weatherData, setWeatherData] = useState<IWeatherData | null>(null);
 
+  const [selectedCity, setSelectedCity] = useState<string>("Pune");
+  const [isWeatherLoading, setIsWeatherLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -62,6 +198,43 @@ export default function CropAdvisoryPage() {
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 4000);
+  };
+
+  const fetchWeatherForCity = useCallback(async (city: string) => {
+    setIsWeatherLoading(true);
+    try {
+      const timestamp = Date.now();
+      const wRes = await fetch(`/api/weather?city=${encodeURIComponent(city)}&t=${timestamp}`, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      });
+      if (wRes.ok) {
+        const wData = await wRes.json().catch(() => null);
+        if (wData?.success && wData.data) {
+          setWeatherData(wData.data);
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn("Weather fetch error:", err);
+    } finally {
+      setIsWeatherLoading(false);
+    }
+    return false;
+  }, []);
+
+  const handleLocationChange = async (newCity: string) => {
+    setSelectedCity(newCity);
+    setErrorMsg(null);
+    const success = await fetchWeatherForCity(newCity);
+    if (success) {
+      showToast(`✅ Telemetry updated for ${newCity}`);
+    } else {
+      setErrorMsg(`Unable to fetch real-time weather telemetry for ${newCity}. Please try again.`);
+    }
   };
 
   const fetchCropAdvisoryData = useCallback(async (isManual = false) => {
@@ -94,26 +267,21 @@ export default function CropAdvisoryPage() {
         fetch(`/api/soil-recommendation?t=${timestamp}`, fetchOpts).catch(() => null),
       ]);
 
-      let userLocation = "Pune";
+      let initialCity = selectedCity || "Pune";
       if (userRes && userRes.ok) {
         const uData = await userRes.json().catch(() => null);
         if (uData?.success && uData?.user) {
           setDbUser(uData.user);
           if (uData.user.defaultLocation) {
-            userLocation = uData.user.defaultLocation;
+            initialCity = uData.user.defaultLocation;
           }
         }
       }
 
-      let currentAnalytics: IAnalyticsResponse | null = null;
       if (analyticsRes && analyticsRes.ok) {
         const aData = await analyticsRes.json().catch(() => null);
         if (aData?.success) {
           setAnalytics(aData);
-          currentAnalytics = aData;
-          if (aData.weatherAnalytics?.recentCity) {
-            userLocation = aData.weatherAnalytics.recentCity;
-          }
         }
       }
 
@@ -128,27 +296,15 @@ export default function CropAdvisoryPage() {
         const sData = await soilRes.json().catch(() => null);
         if (sData?.success && Array.isArray(sData.history)) {
           setSoilHistory(sData.history);
-          if (sData.history.length > 0 && sData.history[0].city) {
-            userLocation = sData.history[0].city;
-          }
         }
       }
 
-      // Fetch active weather telemetry for location
-      try {
-        const wRes = await fetch(`/api/weather?city=${encodeURIComponent(userLocation)}`, fetchOpts);
-        if (wRes.ok) {
-          const wData = await wRes.json().catch(() => null);
-          if (wData?.success && wData.data) {
-            setWeatherData(wData.data);
-          }
-        }
-      } catch (err) {
-        console.warn("Weather sync notice:", err);
-      }
+      const activeTargetCity = selectedCity || initialCity;
+      setSelectedCity(activeTargetCity);
+      await fetchWeatherForCity(activeTargetCity);
 
       if (isManual) {
-        showToast("✅ Crop advisory telemetry synchronized!");
+        showToast(`✅ Crop advisory telemetry synchronized for ${activeTargetCity}!`);
       }
     } catch (err) {
       console.error("Error loading Crop Advisory data:", err);
@@ -157,7 +313,7 @@ export default function CropAdvisoryPage() {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [selectedCity, fetchWeatherForCity]);
 
   useEffect(() => {
     if (isClerkLoaded && clerkUser) {
@@ -165,74 +321,79 @@ export default function CropAdvisoryPage() {
     }
   }, [isClerkLoaded, clerkUser, fetchCropAdvisoryData]);
 
-  // Derive Real Telemetry Values with Fallbacks
-  const latestSoilReport = soilHistory.length > 0 ? soilHistory[0] : null;
+  // Derive Real Telemetry Values for Current Selected City
+  const currentCity = weatherData?.city || selectedCity || "Pune";
 
-  const currentCity =
-    weatherData?.city ||
-    latestSoilReport?.city ||
-    analytics?.weatherAnalytics?.recentCity ||
-    dbUser?.defaultLocation ||
-    "Pune";
+  // Check if there is a saved soil report matching current selected location
+  const matchingSoilReport = soilHistory.find(
+    (s) => s.city && s.city.toLowerCase() === currentCity.toLowerCase()
+  ) || (soilHistory.length > 0 && (!soilHistory[0].city || soilHistory[0].city.toLowerCase() === currentCity.toLowerCase()) ? soilHistory[0] : null);
 
   const currentTemp =
     weatherData?.temperature !== undefined
       ? `${weatherData.temperature}°C`
-      : analytics?.weatherAnalytics?.avgTemperature !== null && analytics?.weatherAnalytics?.avgTemperature !== undefined
-      ? `${analytics.weatherAnalytics.avgTemperature}°C`
-      : latestSoilReport?.temperature
-      ? `${latestSoilReport.temperature}°C`
-      : "Data unavailable";
+      : matchingSoilReport?.temperature
+      ? `${matchingSoilReport.temperature}°C`
+      : "25°C";
 
   const currentHumidity =
     weatherData?.humidity !== undefined
       ? `${weatherData.humidity}%`
-      : analytics?.weatherAnalytics?.avgHumidity !== null && analytics?.weatherAnalytics?.avgHumidity !== undefined
-      ? `${analytics.weatherAnalytics.avgHumidity}%`
-      : latestSoilReport?.humidity
-      ? `${latestSoilReport.humidity}%`
-      : "Data unavailable";
+      : matchingSoilReport?.humidity
+      ? `${matchingSoilReport.humidity}%`
+      : "55%";
 
   const currentRainProb =
     weatherData?.rainProbability !== undefined
       ? `${weatherData.rainProbability}%`
-      : analytics?.weatherAnalytics?.avgRainProbability !== null && analytics?.weatherAnalytics?.avgRainProbability !== undefined
-      ? `${analytics.weatherAnalytics.avgRainProbability}%`
-      : "Data unavailable";
+      : "15%";
 
-  const currentSoilScore =
-    latestSoilReport?.soilHealthScore ||
-    analytics?.soilCropInsights?.averageSoilScore ||
-    "85/100 (Optimal Fertility)";
+  // Soil health score derivation
+  const rawSoilScore = getValidString(matchingSoilReport?.soilHealthScore);
+  const hasSoilData = !isInvalidString(rawSoilScore);
+  const currentSoilScore = hasSoilData ? (rawSoilScore as string) : "No Saved Soil Test";
 
-  const primaryCrop =
-    latestSoilReport?.bestCrop ||
-    analytics?.soilCropInsights?.mostRecommendedCrop ||
-    dbUser?.defaultCrop ||
-    "Wheat & Mustard";
+  // Location-based agronomic suitability calculation
+  const tempNum = weatherData?.temperature ?? 25;
+  const humNum = weatherData?.humidity ?? 55;
+  const rainNum = weatherData?.rainProbability ?? 15;
 
+  const telemetryCrop = calculateTelemetryRecommendedCrop(tempNum, humNum, rainNum);
+  const rawSoilCrop = getValidString(matchingSoilReport?.bestCrop);
+
+  // Primary Crop: Saved soil report for this specific city takes priority; otherwise use climate telemetry calculation
+  const primaryCrop = rawSoilCrop || telemetryCrop;
+
+  // Alternative crops derivation
+  const rawAltCrops = matchingSoilReport?.alternativeCrops?.filter(
+    (c) => !isInvalidString(c) && c.trim().toLowerCase() !== primaryCrop.toLowerCase()
+  );
   const altCrops =
-    latestSoilReport?.alternativeCrops && latestSoilReport.alternativeCrops.length > 0
-      ? latestSoilReport.alternativeCrops
-      : ["Pigeonpea (Tur)", "Groundnut", "Chickpea (Gram)"];
+    rawAltCrops && rawAltCrops.length > 0
+      ? rawAltCrops
+      : getCropAlternativeOptions(primaryCrop);
 
-  const fertilizerAdvice =
-    latestSoilReport?.fertilizerRecommendation ||
-    analytics?.soilCropInsights?.mostCommonFertilizer ||
-    "Apply NPK 10-26-26 @ 50 kg/acre basal dose + Neem coated Urea @ 25 kg/acre.";
+  // Fertilizer Advice
+  const rawFertilizer = getValidString(matchingSoilReport?.fertilizerRecommendation);
+  const fertilizerAdvice = !isInvalidString(rawFertilizer)
+    ? (rawFertilizer as string)
+    : getCropFertilizerAdvisory(primaryCrop);
 
-  const irrigationAdvice =
-    latestSoilReport?.irrigationRecommendation ||
-    analytics?.soilCropInsights?.irrigationRecommendation ||
-    "Adopt controlled drip micro-irrigation during early morning hours.";
+  // Irrigation Advice
+  const rawIrrigation = getValidString(matchingSoilReport?.irrigationRecommendation);
+  const irrigationAdvice = !isInvalidString(rawIrrigation)
+    ? (rawIrrigation as string)
+    : getCropIrrigationAdvisory(primaryCrop);
 
   const diseaseRiskLevel =
-    latestSoilReport?.diseaseRiskLevel ||
-    (farmIntel?.riskLevel === "HIGH" ? "High" : farmIntel?.riskLevel === "MODERATE" ? "Medium" : "Low");
+    matchingSoilReport?.diseaseRiskLevel ||
+    (humNum >= 65 && tempNum > 26 ? "Medium" : farmIntel?.riskLevel === "HIGH" ? "High" : "Low");
 
-  const cropChoiceRationale =
-    latestSoilReport?.explanations?.cropChoice ||
-    `Regional temperature envelope (${currentTemp}) and humidity (${currentHumidity}) create optimal growth conditions for ${primaryCrop}.`;
+  // Rationale
+  const rawRationale = matchingSoilReport?.explanations?.cropChoice;
+  const cropChoiceRationale = !isInvalidString(rawRationale)
+    ? (rawRationale as string)
+    : `Regional temperature envelope (${currentTemp}) and relative humidity (${currentHumidity}) in ${currentCity} create optimal growth conditions for ${primaryCrop}.`;
 
   return (
     <PageContainer>
@@ -258,7 +419,7 @@ export default function CropAdvisoryPage() {
             variant="emerald"
             size="sm"
             onClick={() => fetchCropAdvisoryData(true)}
-            disabled={loading || isRefreshing}
+            disabled={loading || isRefreshing || isWeatherLoading}
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />}
           >
             Refresh Advisory
@@ -301,7 +462,7 @@ export default function CropAdvisoryPage() {
           {/* SECTION 1: CURRENT FARM CONDITIONS SUMMARY */}
           <Card variant="glass" className="border-emerald-200/90 shadow-md">
             <CardHeader className="bg-gradient-to-r from-emerald-900/10 via-teal-900/5 to-transparent border-b border-emerald-100 pb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-md shrink-0">
                     <CloudSun className="w-6 h-6" />
@@ -311,14 +472,34 @@ export default function CropAdvisoryPage() {
                       Current Farm Telemetry Conditions
                     </CardTitle>
                     <CardDescription className="text-xs text-slate-500">
-                      Real-time regional weather, soil health index, and farm configuration.
+                      Real-time regional weather, soil health index, and active farm location.
                     </CardDescription>
                   </div>
                 </div>
 
-                <Badge variant="emerald" className="self-start sm:self-auto text-xs px-3 py-1 font-bold">
-                  Region: {currentCity}
-                </Badge>
+                {/* Farmer-Friendly Location Selector */}
+                <div className="flex items-center gap-2 bg-white/90 p-1.5 px-3 rounded-2xl border border-emerald-300 shadow-xs self-start lg:self-auto">
+                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <label htmlFor="farm-location-select" className="text-xs font-bold text-slate-700 whitespace-nowrap">
+                    Select Farm Location:
+                  </label>
+                  <select
+                    id="farm-location-select"
+                    value={selectedCity}
+                    onChange={(e) => handleLocationChange(e.target.value)}
+                    disabled={isWeatherLoading || isRefreshing}
+                    className="text-xs font-bold text-emerald-950 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition-all disabled:opacity-50"
+                  >
+                    {SUPPORTED_LOCATIONS.map((loc) => (
+                      <option key={loc} value={loc} className="text-slate-900 bg-white">
+                        {loc} {loc === dbUser?.defaultLocation ? "(Saved Default)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {isWeatherLoading && (
+                    <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin shrink-0" />
+                  )}
+                </div>
               </div>
             </CardHeader>
 
@@ -327,7 +508,7 @@ export default function CropAdvisoryPage() {
                 {/* Location & Crop */}
                 <div className="p-4 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                    Location & Preferred Crop
+                    Active Location & Crop Focus
                   </span>
                   <div className="space-y-1">
                     <span className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
@@ -383,7 +564,7 @@ export default function CropAdvisoryPage() {
                       {currentSoilScore}
                     </span>
                     <span className="text-xs font-semibold text-slate-500 block">
-                      Risk Level: {diseaseRiskLevel}
+                      {hasSoilData ? `Risk Level: ${diseaseRiskLevel}` : "Pending Soil Test Report"}
                     </span>
                   </div>
                 </div>
@@ -445,7 +626,9 @@ export default function CropAdvisoryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">
                     <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Soil Compatibility</span>
-                    <span className="font-bold text-slate-800">Optimal ({currentSoilScore})</span>
+                    <span className="font-bold text-slate-800">
+                      {hasSoilData ? `Optimal (${currentSoilScore})` : "Good (Weather Optimized)"}
+                    </span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">
                     <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Weather Suitability</span>
@@ -505,7 +688,9 @@ export default function CropAdvisoryPage() {
                     <span>Soil Health & Fertility Evidence</span>
                   </div>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    Your soil health index is at <strong>{currentSoilScore}</strong>. This provides high organic carbon and nutrient retention capacity suitable for heavy feeder crops like <strong>{primaryCrop}</strong>.
+                    {hasSoilData
+                      ? `Your soil health index is at ${currentSoilScore}. This provides optimal organic carbon and nutrient retention capacity suitable for heavy feeder crops like ${primaryCrop}.`
+                      : `No saved soil test report found. Recommendation is optimized using your registered crop focus (${primaryCrop}) and regional atmospheric weather telemetry. Run a test on the Weather & Soil page for personalized soil-based insights.`}
                   </p>
                 </div>
 
@@ -553,7 +738,7 @@ export default function CropAdvisoryPage() {
                   {/* Primary Crop Row */}
                   <tr className="bg-emerald-50/50 hover:bg-emerald-50">
                     <td className="py-3.5 px-3 font-bold text-slate-900">🌱 {primaryCrop} (Primary)</td>
-                    <td className="py-3.5 px-3 text-emerald-800 font-semibold">Optimal</td>
+                    <td className="py-3.5 px-3 text-emerald-800 font-semibold">{hasSoilData ? "Optimal" : "Good"}</td>
                     <td className="py-3.5 px-3 text-slate-700">High</td>
                     <td className="py-3.5 px-3 text-slate-700">{diseaseRiskLevel}</td>
                     <td className="py-3.5 px-3 text-right">
@@ -633,3 +818,4 @@ export default function CropAdvisoryPage() {
     </PageContainer>
   );
 }
+

@@ -3,6 +3,12 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface IDiseaseAnalysisModel extends Document {
   clerkId: string;
   imageUrl: string;
+  isAgriculturalImage?: boolean;
+  imageType?: string;
+  cropDetected?: string;
+  hasVisibleSymptoms?: boolean;
+  isHealthy?: boolean;
+  validationMessage?: string;
   disease: string;
   confidence: string;
   severity: "Low" | "Medium" | "High";
@@ -27,6 +33,30 @@ const DiseaseAnalysisSchema = new Schema<IDiseaseAnalysisModel>(
     imageUrl: {
       type: String,
       required: true,
+    },
+    isAgriculturalImage: {
+      type: Boolean,
+      default: true,
+    },
+    imageType: {
+      type: String,
+      default: "crop_leaf",
+    },
+    cropDetected: {
+      type: String,
+      default: "",
+    },
+    hasVisibleSymptoms: {
+      type: Boolean,
+      default: true,
+    },
+    isHealthy: {
+      type: Boolean,
+      default: false,
+    },
+    validationMessage: {
+      type: String,
+      default: "",
     },
     disease: {
       type: String,
