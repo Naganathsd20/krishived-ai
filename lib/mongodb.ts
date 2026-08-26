@@ -79,6 +79,10 @@ export async function connectDB(): Promise<typeof mongoose> {
       } catch (err) {
         cached.promise = null;
         cached.conn = null;
+        console.error(
+          "[MongoDB Connection Error] Failed to connect to MongoDB Atlas cluster:",
+          err instanceof Error ? err.message : String(err)
+        );
         throw err;
       }
     })();
