@@ -38,12 +38,46 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Spinner, SkeletonCard } from "@/components/ui/loading";
 import { IMandiPrice, IMandiPriceResponse } from "@/types/mandi";
 
+const KARNATAKA_DISTRICTS = [
+  "Bagalkot",
+  "Ballari",
+  "Belagavi",
+  "Bengaluru Rural",
+  "Bengaluru Urban",
+  "Bidar",
+  "Chamarajanagar",
+  "Chikkaballapur",
+  "Chikkamagaluru",
+  "Chitradurga",
+  "Dakshina Kannada",
+  "Davanagere",
+  "Dharwad",
+  "Gadag",
+  "Hassan",
+  "Haveri",
+  "Kalaburagi",
+  "Kodagu",
+  "Kolar",
+  "Koppal",
+  "Mandya",
+  "Mysuru",
+  "Raichur",
+  "Ramanagara",
+  "Shivamogga",
+  "Tumakuru",
+  "Udupi",
+  "Uttara Kannada",
+  "Vijayapura",
+  "Yadgir",
+  "Vijayanagara",
+];
+
 export default function MandiPricesPage() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
 
   // Filters State
-  const [stateFilter, setStateFilter] = useState<string>("Maharashtra");
-  const [districtFilter, setDistrictFilter] = useState<string>("Pune");
+  const [stateFilter, setStateFilter] = useState<string>("Karnataka");
+  const [districtFilter, setDistrictFilter] = useState<string>("Dharwad");
   const [commodityFilter, setCommodityFilter] = useState<string>("Wheat");
   const [marketFilter, setMarketFilter] = useState<string>("");
 
@@ -59,95 +93,126 @@ export default function MandiPricesPage() {
     setTimeout(() => setToastMsg(null), 4000);
   };
 
-  // Fetch Farmer Default Preferences on mount
+  const initialFetchedRef = React.useRef(false);
+
+  // Fetch Farmer Default Preferences & Initial Mandi Prices on mount
   useEffect(() => {
-    async function loadFarmerPreferences() {
+    if (!isClerkLoaded || !clerkUser || initialFetchedRef.current) return;
+    initialFetchedRef.current = true;
+
+    async function loadFarmerPreferencesAndFetch() {
+      let initialDistrict = "Dharwad";
+      let initialCommodity = "Wheat";
+
       try {
         const res = await fetch("/api/user/preferences");
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.preferences) {
-            if (data.preferences.defaultLocation) {
-              setDistrictFilter(data.preferences.defaultLocation);
+            if (
+              data.preferences.defaultLocation &&
+              KARNATAKA_DISTRICTS.includes(data.preferences.defaultLocation)
+            ) {
+              initialDistrict = data.preferences.defaultLocation;
+              setDistrictFilter(initialDistrict);
             }
             if (data.preferences.defaultCrop) {
-              const mainCrop = data.preferences.defaultCrop.split("&")[0].trim();
-              setCommodityFilter(mainCrop);
+              initialCommodity = data.preferences.defaultCrop.split("&")[0].trim();
+              setCommodityFilter(initialCommodity);
             }
           }
         }
       } catch {
         // Fallback to default filters
       }
-    }
-    loadFarmerPreferences();
-  }, []);
 
-  const fetchMandiPricesData = useCallback(
-    async (isManual = false) => {
-      if (isManual) {
-        setIsRefreshing(true);
+      fetchMandiPricesData({
+        state: "Karnataka",
+        district: initialDistrict,
+        commodity: initialCommodity,
+        market: "",
+      });
+    }
+
+    loadFarmerPreferencesAndFetch();
+  }, [isClerkLoaded, clerkUser]);
+
+  const fetchMandiPricesData = async (
+    overrideFilters?: { state?: string; district?: string; commodity?: string; market?: string },
+    isManual = false
+  ) => {
+    if (isManual) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setErrorMsg(null);
+
+    const st = overrideFilters?.state ?? stateFilter;
+    const dist = overrideFilters?.district ?? districtFilter;
+    const comm = overrideFilters?.commodity ?? commodityFilter;
+    const mkt = overrideFilters?.market ?? marketFilter;
+
+    try {
+      const query = new URLSearchParams();
+      if (st.trim() && st !== "All States") {
+        query.set("state", st.trim());
+      }
+      if (dist.trim()) {
+        query.set("district", dist.trim());
+      }
+      if (comm.trim()) {
+        query.set("commodity", comm.trim());
+      }
+      if (mkt.trim()) {
+        query.set("market", mkt.trim());
+      }
+
+      const res = await fetch(`/api/mandi-prices?${query.toString()}`);
+      const data: IMandiPriceResponse = await res.json();
+
+      if (res.ok && data.success) {
+        setMandiData(data);
       } else {
-        setLoading(true);
+        setMandiData(data);
+        setErrorMsg(data.error || "Unable to fetch mandi market prices.");
       }
-      setErrorMsg(null);
 
-      try {
-        const query = new URLSearchParams();
-        if (stateFilter.trim() && stateFilter !== "All States") {
-          query.set("state", stateFilter.trim());
-        }
-        if (districtFilter.trim()) {
-          query.set("district", districtFilter.trim());
-        }
-        if (commodityFilter.trim()) {
-          query.set("commodity", commodityFilter.trim());
-        }
-        if (marketFilter.trim()) {
-          query.set("market", marketFilter.trim());
-        }
-
-        const res = await fetch(`/api/mandi-prices?${query.toString()}`);
-        const data: IMandiPriceResponse = await res.json();
-
-        if (res.ok && data.success) {
-          setMandiData(data);
-        } else {
-          setMandiData(data);
-          setErrorMsg(data.error || "Unable to fetch mandi market prices.");
-        }
-
-        if (isManual) {
-          showToast("✅ Mandi prices synchronized from Agmarknet.");
-        }
-      } catch (err) {
-        console.error("Error loading mandi prices:", err);
-        const msg = err instanceof Error ? err.message : "Failed to load mandi prices telemetry.";
-        setErrorMsg(msg);
-      } finally {
-        setLoading(false);
-        setIsRefreshing(false);
+      if (isManual) {
+        showToast("✅ Mandi prices synchronized from Agmarknet.");
       }
-    },
-    [stateFilter, districtFilter, commodityFilter, marketFilter]
-  );
-
-  useEffect(() => {
-    if (isClerkLoaded && clerkUser) {
-      fetchMandiPricesData();
+    } catch (err) {
+      console.error("Error loading mandi prices:", err);
+      const msg = err instanceof Error ? err.message : "Failed to load mandi prices telemetry.";
+      setErrorMsg(msg);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
     }
-  }, [isClerkLoaded, clerkUser, fetchMandiPricesData]);
+  };
 
   const handleFilterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchMandiPricesData(false);
+    fetchMandiPricesData();
   };
 
   const handleResetFilters = () => {
-    setStateFilter("Maharashtra");
-    setDistrictFilter("Pune");
-    setCommodityFilter("Wheat");
-    setMarketFilter("");
+    const defaultState = "Karnataka";
+    const defaultDistrict = "Dharwad";
+    const defaultCommodity = "Wheat";
+    const defaultMarket = "";
+
+    setStateFilter(defaultState);
+    setDistrictFilter(defaultDistrict);
+    setCommodityFilter(defaultCommodity);
+    setMarketFilter(defaultMarket);
+
+    fetchMandiPricesData({
+      state: defaultState,
+      district: defaultDistrict,
+      commodity: defaultCommodity,
+      market: defaultMarket,
+    });
   };
 
   // Calculate Summary Statistics from actual returned records
@@ -189,7 +254,7 @@ export default function MandiPricesPage() {
           <Button
             variant="emerald"
             size="sm"
-            onClick={() => fetchMandiPricesData(true)}
+            onClick={() => fetchMandiPricesData(undefined, true)}
             disabled={loading || isRefreshing}
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />}
           >
@@ -212,7 +277,7 @@ export default function MandiPricesPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => fetchMandiPricesData(true)}
+              onClick={() => fetchMandiPricesData(undefined, true)}
               leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
               className="border-rose-300 text-rose-800 hover:bg-rose-100 shrink-0"
             >
@@ -252,29 +317,24 @@ export default function MandiPricesPage() {
                   onChange={(e) => setStateFilter(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                 >
-                  <option value="All States">All States</option>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="Punjab">Punjab</option>
-                  <option value="Uttar Pradesh">Uttar Pradesh</option>
-                  <option value="Gujarat">Gujarat</option>
-                  <option value="Madhya Pradesh">Madhya Pradesh</option>
                   <option value="Karnataka">Karnataka</option>
-                  <option value="Haryana">Haryana</option>
-                  <option value="Rajasthan">Rajasthan</option>
-                  <option value="Tamil Nadu">Tamil Nadu</option>
                 </select>
               </div>
 
               {/* District */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">District</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Pune, Nashik"
+                <select
                   value={districtFilter}
                   onChange={(e) => setDistrictFilter(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                />
+                >
+                  {KARNATAKA_DISTRICTS.map((dist) => (
+                    <option key={dist} value={dist}>
+                      {dist}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Commodity */}

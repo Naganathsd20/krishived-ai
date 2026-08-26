@@ -11,7 +11,9 @@ const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes TTL
 /**
  * Calculates real data freshness based on arrival_date string (e.g., "19/08/2026" or "2026-08-19").
  */
-function calculateDataFreshness(arrivalDateStr?: string): "Live Agmarknet Data" | "Recent Data (1-3 Days Ago)" | "Agmarknet Historical Data" {
+function calculateDataFreshness(
+  arrivalDateStr?: string
+): "Live Agmarknet Data" | "Recent Data (1-3 Days Ago)" | "Agmarknet Historical Data" {
   if (!arrivalDateStr) return "Agmarknet Historical Data";
 
   try {
@@ -70,33 +72,61 @@ export async function fetchMandiPrices(params: {
 
   const apiKey = process.env.DATAGOV_API_KEY || process.env.AGMARKNET_API_KEY;
 
-  if (!apiKey || apiKey === "demo_key") {
+  if (!apiKey || apiKey === "demo_key" || apiKey.includes("YOUR_REAL_DATAGOV_API_KEY")) {
     return {
       success: false,
       totalRecords: 0,
       prices: [],
-      error: "Mandi prices service is currently unconfigured. DATAGOV_API_KEY environment variable is required.",
+      error: "Mandi prices service is currently unconfigured. DATAGOV_API_KEY environment variable is required in .env.local file.",
     };
   }
 
   try {
+    // Official Data.gov.in Resource ID for "Current Daily Price of Various Commodities from Various Markets (Mandi)"
+    const DATA_GOV_RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070";
     const resourceUrl = new URL(
-      "https://api.data.gov.in/resource/9ef3b15a-0c14-4683-92f7-01b0e3507236"
+      `https://api.data.gov.in/resource/${DATA_GOV_RESOURCE_ID}`
     );
 
     resourceUrl.searchParams.append("api-key", apiKey);
     resourceUrl.searchParams.append("format", "json");
-    resourceUrl.searchParams.append("limit", "50");
+    resourceUrl.searchParams.append("limit", "500");
 
-    if (state) resourceUrl.searchParams.append("filters[state]", state);
-    if (district) resourceUrl.searchParams.append("filters[district]", district);
-    if (commodity) resourceUrl.searchParams.append("filters[commodity]", commodity);
-    if (market) resourceUrl.searchParams.append("filters[market]", market);
+    if (state && state.toLowerCase() !== "all states") {
+      resourceUrl.searchParams.append("filters[state]", state);
+    }
+    if (district) {
+      resourceUrl.searchParams.append("filters[district]", district);
+    }
+    if (commodity) {
+      resourceUrl.searchParams.append("filters[commodity]", commodity);
+    }
+    if (market) {
+      resourceUrl.searchParams.append("filters[market]", market);
+    }
+
+    console.log("[Mandi API] Requesting Data.gov.in with filters:", {
+      state: state || "(All)",
+      district: district || "(All)",
+      commodity: commodity || "(All)",
+      market: market || "(All)",
+    });
 
     const res = await fetch(resourceUrl.toString(), {
       next: { revalidate: 1800 },
       headers: { Accept: "application/json" },
     });
+
+    console.log("[Mandi API] Upstream response status:", res.status);
+
+    if (res.status === 401 || res.status === 403) {
+      return {
+        success: false,
+        totalRecords: 0,
+        prices: [],
+        error: "Invalid DATAGOV_API_KEY or key not authorized on Data.gov.in. Please check your API key in .env.local.",
+      };
+    }
 
     if (!res.ok) {
       return {
@@ -110,6 +140,7 @@ export async function fetchMandiPrices(params: {
     const data = await res.json().catch(() => null);
 
     if (!data || !Array.isArray(data.records)) {
+      console.error("[Mandi API] Invalid payload structure returned:", data?.status, data?.message);
       return {
         success: false,
         totalRecords: 0,
@@ -118,12 +149,48 @@ export async function fetchMandiPrices(params: {
       };
     }
 
-    const records: IAgmarknetRawRecord[] = data.records;
+    let records: IAgmarknetRawRecord[] = data.records;
+    console.log(`[Mandi API] Upstream returned ${records.length} records for initial query.`);
+
+    // If direct API filters returned 0 records but we have broader search terms (e.g. commodity substring),
+    // perform a secondary fallback query with state/district to check for substring commodity matches.
+    if (records.length === 0 && commodity && (state || district)) {
+      console.log("[Mandi API] Direct filters returned 0 records. Trying fallback broader query...");
+      const fallbackUrl = new URL(`https://api.data.gov.in/resource/${DATA_GOV_RESOURCE_ID}`);
+      fallbackUrl.searchParams.append("api-key", apiKey);
+      fallbackUrl.searchParams.append("format", "json");
+      fallbackUrl.searchParams.append("limit", "500");
+      if (state && state.toLowerCase() !== "all states") {
+        fallbackUrl.searchParams.append("filters[state]", state);
+      }
+      if (district) {
+        fallbackUrl.searchParams.append("filters[district]", district);
+      }
+
+      const fallbackRes = await fetch(fallbackUrl.toString(), {
+        next: { revalidate: 1800 },
+        headers: { Accept: "application/json" },
+      });
+
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json().catch(() => null);
+        if (fallbackData && Array.isArray(fallbackData.records)) {
+          const commLower = commodity.toLowerCase();
+          const mktLower = market.toLowerCase();
+          records = fallbackData.records.filter((r: IAgmarknetRawRecord) => {
+            const matchComm = !commLower || (r.commodity && r.commodity.toLowerCase().includes(commLower));
+            const matchMkt = !mktLower || (r.market && r.market.toLowerCase().includes(mktLower));
+            return matchComm && matchMkt;
+          });
+          console.log(`[Mandi API] Fallback broader query returned ${records.length} matching records.`);
+        }
+      }
+    }
 
     const normalizedPrices: IMandiPrice[] = records.map((rec, idx) => {
-      const minP = Number(rec.min_price) || 0;
-      const maxP = Number(rec.max_price) || 0;
-      const modalP = Number(rec.modal_price) || minP || maxP;
+      const minP = Math.max(0, Number(rec.min_price) || 0);
+      const maxP = Math.max(0, Number(rec.max_price) || 0);
+      const modalP = Math.max(0, Number(rec.modal_price) || minP || maxP);
       const freshness = calculateDataFreshness(rec.arrival_date);
 
       return {
@@ -132,7 +199,7 @@ export async function fetchMandiPrices(params: {
         district: rec.district || district || "Regional Market",
         market: rec.market || market || "APMC Mandi",
         commodity: rec.commodity || commodity || "Agricultural Crop",
-        variety: rec.variety || "Standard",
+        variety: rec.variety || rec.grade || "Standard",
         arrivalDate: rec.arrival_date || new Date().toLocaleDateString("en-IN"),
         minPrice: minP,
         maxPrice: maxP,

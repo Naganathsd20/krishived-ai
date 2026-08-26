@@ -10,17 +10,10 @@ function sanitizeParam(input: string | null): string {
 
 function sanitizeErrorMessage(rawError: unknown): string {
   if (typeof rawError === "string") {
-    if (rawError.includes("API key") || rawError.includes("DATAGOV") || rawError.includes("connect")) {
-      return "Unable to fetch Agmarknet mandi market prices right now.";
-    }
     return rawError;
   }
   if (rawError instanceof Error) {
-    const msg = rawError.message;
-    if (msg.includes("API key") || msg.includes("DATAGOV") || msg.includes("connect")) {
-      return "Unable to fetch Agmarknet mandi market prices right now.";
-    }
-    return msg;
+    return rawError.message;
   }
   return "Failed to load mandi market prices.";
 }

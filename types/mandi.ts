@@ -34,6 +34,7 @@ export interface IAgmarknetRawRecord {
   market?: string;
   commodity?: string;
   variety?: string;
+  grade?: string;
   arrival_date?: string;
   min_price?: string | number;
   max_price?: string | number;
