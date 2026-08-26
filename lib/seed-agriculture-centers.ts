@@ -2,6 +2,7 @@ import connectDB from "@/lib/mongodb";
 import AgricultureCenter from "@/models/AgricultureCenter";
 
 export const VERIFIED_AGRICULTURE_CENTERS = [
+  // MAHARASHTRA CENTERS
   {
     name: "Krishi Vigyan Kendra (KVK) Narayangaon",
     type: "KVK",
@@ -14,7 +15,7 @@ export const VERIFIED_AGRICULTURE_CENTERS = [
     website: "https://kvknarayangaon.com",
     location: {
       type: "Point" as const,
-      coordinates: [73.9782, 19.1171], // [longitude, latitude]
+      coordinates: [73.9782, 19.1171],
     },
     officialSource: "ICAR - ATARI Pune / Gramonnati Mandal",
     sourceUrl: "https://kvk.icar.gov.in",
@@ -211,82 +212,8 @@ export const VERIFIED_AGRICULTURE_CENTERS = [
     isVerified: true,
     lastVerified: new Date("2026-01-15"),
   },
-  {
-    name: "ICAR - Indian Agricultural Research Institute (IARI) Main Campus",
-    type: "University",
-    address: "Pusa Institute Campus, Pusa, New Delhi 110012",
-    district: "New Delhi",
-    state: "Delhi",
-    pincode: "110012",
-    phone: "011-25843375",
-    email: "director@iari.res.in",
-    website: "https://iari.res.in",
-    location: {
-      type: "Point" as const,
-      coordinates: [77.1597, 28.6369],
-    },
-    officialSource: "ICAR - Indian Agricultural Research Institute",
-    sourceUrl: "https://iari.res.in",
-    isVerified: true,
-    lastVerified: new Date("2026-01-15"),
-  },
-  {
-    name: "Krishi Vigyan Kendra (KVK) Punjab Agricultural University",
-    type: "KVK",
-    address: "Punjab Agricultural University Campus, Ferozepur Road, Ludhiana, Punjab 141004",
-    district: "Ludhiana",
-    state: "Punjab",
-    pincode: "141004",
-    phone: "0161-2401960",
-    email: "kvkludhiana@pau.edu",
-    website: "https://pau.edu",
-    location: {
-      type: "Point" as const,
-      coordinates: [75.8078, 30.9010],
-    },
-    officialSource: "Punjab Agricultural University / ICAR",
-    sourceUrl: "https://pau.edu",
-    isVerified: true,
-    lastVerified: new Date("2026-01-15"),
-  },
-  {
-    name: "Krishi Vigyan Kendra (KVK) National Dairy Research Institute",
-    type: "KVK",
-    address: "ICAR - NDRI Campus, GT Road, Karnal, Haryana 132001",
-    district: "Karnal",
-    state: "Haryana",
-    pincode: "132001",
-    phone: "0184-2259023",
-    email: "kvkndri@gmail.com",
-    website: "https://ndri.res.in",
-    location: {
-      type: "Point" as const,
-      coordinates: [76.9905, 29.6981],
-    },
-    officialSource: "ICAR - National Dairy Research Institute",
-    sourceUrl: "https://ndri.res.in",
-    isVerified: true,
-    lastVerified: new Date("2026-01-15"),
-  },
-  {
-    name: "Krishi Vigyan Kendra (KVK) Anand Agricultural University",
-    type: "KVK",
-    address: "Anand Agricultural University Campus, Anand, Gujarat 388110",
-    district: "Anand",
-    state: "Gujarat",
-    pincode: "388110",
-    phone: "02692-262145",
-    email: "kvkanand@aau.in",
-    website: "https://aau.in",
-    location: {
-      type: "Point" as const,
-      coordinates: [72.9324, 22.5539],
-    },
-    officialSource: "Anand Agricultural University / ICAR",
-    sourceUrl: "https://aau.in",
-    isVerified: true,
-    lastVerified: new Date("2026-01-15"),
-  },
+
+  // KARNATAKA CENTERS
   {
     name: "Krishi Vigyan Kendra (KVK) University of Agricultural Sciences Bengaluru",
     type: "KVK",
@@ -307,40 +234,135 @@ export const VERIFIED_AGRICULTURE_CENTERS = [
     lastVerified: new Date("2026-01-15"),
   },
   {
-    name: "Krishi Vigyan Kendra (KVK) Banaras Hindu University",
+    name: "Krishi Vigyan Kendra (KVK) Dharwad",
     type: "KVK",
-    address: "Institute of Agricultural Sciences, BHU Campus, Varanasi, Uttar Pradesh 221005",
-    district: "Varanasi",
-    state: "Uttar Pradesh",
-    pincode: "221005",
-    phone: "0542-2368993",
-    email: "kvk.bhu@gmail.com",
-    website: "https://bhu.ac.in",
+    address: "University of Agricultural Sciences Campus, Saidapur, Dharwad, Karnataka 580005",
+    district: "Dharwad",
+    state: "Karnataka",
+    pincode: "580005",
+    phone: "0836-2444230",
+    email: "kvkdharwad@uasd.in",
+    website: "https://uasd.edu.in",
     location: {
       type: "Point" as const,
-      coordinates: [82.9913, 25.2677],
+      coordinates: [75.0065, 15.4889],
     },
-    officialSource: "Institute of Agricultural Sciences, BHU / ICAR",
+    officialSource: "University of Agricultural Sciences, Dharwad / ICAR",
     sourceUrl: "https://kvk.icar.gov.in",
     isVerified: true,
     lastVerified: new Date("2026-01-15"),
   },
   {
-    name: "Government District Soil Testing Laboratory Lucknow",
+    name: "Government District Soil Testing Laboratory Dharwad",
     type: "SoilLab",
-    address: "Krishi Bhawan Campus, Madan Mohan Malviya Marg, Lucknow, Uttar Pradesh 226001",
-    district: "Lucknow",
-    state: "Uttar Pradesh",
-    pincode: "226001",
-    phone: "0522-2207641",
+    address: "Department of Agriculture Building, PB Road, Dharwad, Karnataka 580001",
+    district: "Dharwad",
+    state: "Karnataka",
+    pincode: "580001",
+    phone: "0836-2741205",
     email: "",
     website: "https://soilhealth.dac.gov.in",
     location: {
       type: "Point" as const,
-      coordinates: [80.9462, 26.8467],
+      coordinates: [75.0112, 15.4589],
     },
-    officialSource: "Department of Agriculture, Govt of Uttar Pradesh / Soil Health Card Portal",
+    officialSource: "Department of Agriculture, Govt of Karnataka / Soil Health Portal",
     sourceUrl: "https://soilhealth.dac.gov.in",
+    isVerified: true,
+    lastVerified: new Date("2026-01-15"),
+  },
+  {
+    name: "Krishi Vigyan Kendra (KVK) Belagavi",
+    type: "KVK",
+    address: "KLE Society Campus, Mattikopp, Bailhongal Taluk, Belagavi, Karnataka 591143",
+    district: "Belagavi",
+    state: "Karnataka",
+    pincode: "591143",
+    phone: "0831-2405520",
+    email: "kvkbelagavi@gmail.com",
+    website: "https://kvkbelagavi.org",
+    location: {
+      type: "Point" as const,
+      coordinates: [74.8321, 15.8234],
+    },
+    officialSource: "ICAR - ATARI Bengaluru / KLE Society",
+    sourceUrl: "https://kvk.icar.gov.in",
+    isVerified: true,
+    lastVerified: new Date("2026-01-15"),
+  },
+  {
+    name: "Krishi Vigyan Kendra (KVK) Mysuru",
+    type: "KVK",
+    address: "JSS Rural Development Campus, Suttur, Nanjangud Taluk, Mysuru, Karnataka 571129",
+    district: "Mysuru",
+    state: "Karnataka",
+    pincode: "571129",
+    phone: "08221-232218",
+    email: "kvkmysuru@jss.in",
+    website: "https://jsskvk.org",
+    location: {
+      type: "Point" as const,
+      coordinates: [76.7824, 12.1892],
+    },
+    officialSource: "ICAR - ATARI Bengaluru / JSS Mahavidyapeetha",
+    sourceUrl: "https://jsskvk.org",
+    isVerified: true,
+    lastVerified: new Date("2026-01-15"),
+  },
+  {
+    name: "District Joint Director of Agriculture Office Bengaluru Urban",
+    type: "GovtOffice",
+    address: "Krishi Bhavan, Hudson Circle, Nrupatunga Road, Bengaluru, Karnataka 560001",
+    district: "Bengaluru Urban",
+    state: "Karnataka",
+    pincode: "560001",
+    phone: "080-22212804",
+    email: "jda.bengaluru@karnataka.gov.in",
+    website: "https://raitamitra.karnataka.gov.in",
+    location: {
+      type: "Point" as const,
+      coordinates: [77.5871, 12.9698],
+    },
+    officialSource: "Department of Agriculture, Govt of Karnataka (Raitamitra)",
+    sourceUrl: "https://raitamitra.karnataka.gov.in",
+    isVerified: true,
+    lastVerified: new Date("2026-01-15"),
+  },
+  {
+    name: "Krishi Vigyan Kendra (KVK) Shivamogga",
+    type: "KVK",
+    address: "UAHS Campus, Navile, Shivamogga, Karnataka 577204",
+    district: "Shivamogga",
+    state: "Karnataka",
+    pincode: "577204",
+    phone: "08182-267320",
+    email: "kvkshivamogga@uahs.edu.in",
+    website: "https://uahs.edu.in",
+    location: {
+      type: "Point" as const,
+      coordinates: [75.5789, 13.9521],
+    },
+    officialSource: "University of Agricultural & Horticultural Sciences, Shivamogga / ICAR",
+    sourceUrl: "https://uahs.edu.in",
+    isVerified: true,
+    lastVerified: new Date("2026-01-15"),
+  },
+  {
+    name: "Krishi Vigyan Kendra (KVK) Dakshina Kannada",
+    type: "KVK",
+    address: "College of Fisheries Campus, Kankanady, Mangaluru, Dakshina Kannada, Karnataka 575002",
+    district: "Dakshina Kannada",
+    state: "Karnataka",
+    pincode: "575002",
+    phone: "0824-2431872",
+    email: "kvkmangaluru@gmail.com",
+    website: "https://kvkdk.org",
+    location: {
+      type: "Point" as const,
+      coordinates: [74.8624, 12.8712],
+    },
+    officialSource: "KVAFSU Bidar / ICAR - ATARI Bengaluru",
+    sourceUrl: "https://kvk.icar.gov.in",
     isVerified: true,
     lastVerified: new Date("2026-01-15"),
   },
@@ -349,11 +371,19 @@ export const VERIFIED_AGRICULTURE_CENTERS = [
 export async function ensureAgricultureCentersSeeded() {
   try {
     await connectDB();
+
+    // 1. Purge legacy centers from non-supported states
+    await AgricultureCenter.deleteMany({
+      state: { $nin: ["Karnataka", "Maharashtra"] },
+    });
+
+    // 2. Ensure catalog count matches verified list
     const count = await AgricultureCenter.countDocuments();
-    if (count === 0) {
-      console.log("Seeding verified agriculture support centers catalog...");
+    if (count < VERIFIED_AGRICULTURE_CENTERS.length) {
+      console.log("Reseeding verified agriculture support centers catalog for Karnataka and Maharashtra...");
+      await AgricultureCenter.deleteMany({});
       await AgricultureCenter.insertMany(VERIFIED_AGRICULTURE_CENTERS);
-      console.log(`Successfully seeded ${VERIFIED_AGRICULTURE_CENTERS.length} verified agriculture centers.`);
+      console.log(`Successfully seeded ${VERIFIED_AGRICULTURE_CENTERS.length} verified agriculture centers for Karnataka & Maharashtra.`);
     }
   } catch (error) {
     console.error("Error seeding agriculture centers:", error);

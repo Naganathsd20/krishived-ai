@@ -25,8 +25,81 @@ import {
   IAgricultureCenterResponse,
 } from "@/types/agriculture-center";
 
+const KARNATAKA_DISTRICTS = [
+  "Bagalkot",
+  "Ballari",
+  "Belagavi",
+  "Bengaluru Rural",
+  "Bengaluru Urban",
+  "Bidar",
+  "Chamarajanagar",
+  "Chikkaballapur",
+  "Chikkamagaluru",
+  "Chitradurga",
+  "Dakshina Kannada",
+  "Davanagere",
+  "Dharwad",
+  "Gadag",
+  "Hassan",
+  "Haveri",
+  "Kalaburagi",
+  "Kodagu",
+  "Kolar",
+  "Koppal",
+  "Mandya",
+  "Mysuru",
+  "Raichur",
+  "Ramanagara",
+  "Shivamogga",
+  "Tumakuru",
+  "Udupi",
+  "Uttara Kannada",
+  "Vijayapura",
+  "Yadgir",
+  "Vijayanagara",
+];
+
+const MAHARASHTRA_DISTRICTS = [
+  "Ahmednagar / Ahilyanagar",
+  "Akola",
+  "Amravati",
+  "Aurangabad / Chhatrapati Sambhajinagar",
+  "Beed",
+  "Bhandara",
+  "Buldhana",
+  "Chandrapur",
+  "Dhule",
+  "Gadchiroli",
+  "Gondia",
+  "Hingoli",
+  "Jalgaon",
+  "Jalna",
+  "Kolhapur",
+  "Latur",
+  "Mumbai City",
+  "Mumbai Suburban",
+  "Nagpur",
+  "Nanded",
+  "Nandurbar",
+  "Nashik",
+  "Osmanabad / Dharashiv",
+  "Palghar",
+  "Parbhani",
+  "Pune",
+  "Raigad",
+  "Ratnagiri",
+  "Sangli",
+  "Satara",
+  "Sindhudurg",
+  "Solapur",
+  "Thane",
+  "Wardha",
+  "Washim",
+  "Yavatmal",
+];
+
 export default function AgricultureCentersPage() {
-  const [selectedState, setSelectedState] = useState<string>("All States");
+  const [selectedState, setSelectedState] = useState<string>("Karnataka");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("All Districts");
   const [selectedType, setSelectedType] = useState<AgricultureCenterType | "All">("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -44,6 +117,13 @@ export default function AgricultureCentersPage() {
 
   const [selectedCenterModal, setSelectedCenterModal] = useState<IAgricultureCenter | null>(null);
 
+  // Handle State Change: Immediately reset district to "All Districts" and reset page to 1
+  const handleStateChange = (newState: string) => {
+    setSelectedState(newState);
+    setSelectedDistrict("All Districts");
+    setPage(1);
+  };
+
   // Fetch Agriculture Centers from API
   const fetchCenters = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) {
@@ -55,8 +135,10 @@ export default function AgricultureCentersPage() {
 
     try {
       const params = new URLSearchParams();
-      if (selectedState && selectedState !== "All States") params.append("state", selectedState);
-      if (selectedDistrict && selectedDistrict !== "All Districts") params.append("district", selectedDistrict);
+      params.append("state", selectedState);
+      if (selectedDistrict && selectedDistrict !== "All Districts") {
+        params.append("district", selectedDistrict);
+      }
       if (selectedType && selectedType !== "All") params.append("type", selectedType);
       if (searchQuery.trim()) params.append("search", searchQuery.trim());
       params.append("page", String(page));
@@ -101,7 +183,7 @@ export default function AgricultureCentersPage() {
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [selectedState, selectedDistrict, selectedType, searchQuery, radiusKm, userCoords]);
+  }, [selectedDistrict, selectedType, searchQuery, radiusKm, userCoords]);
 
   // Browser Geolocation Handler
   const handleEnableLocation = () => {
@@ -142,7 +224,7 @@ export default function AgricultureCentersPage() {
   };
 
   const handleResetFilters = () => {
-    setSelectedState("All States");
+    setSelectedState("Karnataka");
     setSelectedDistrict("All Districts");
     setSelectedType("All");
     setSearchQuery("");
@@ -154,8 +236,8 @@ export default function AgricultureCentersPage() {
 
   const pagination = data?.pagination;
   const centers = data?.centers || [];
-  const availableStates = data?.availableStates || [];
-  const availableDistricts = data?.availableDistricts || [];
+  const availableStates = ["Karnataka", "Maharashtra"];
+  const availableDistricts = selectedState === "Maharashtra" ? MAHARASHTRA_DISTRICTS : KARNATAKA_DISTRICTS;
 
   return (
     <PageContainer className="space-y-6 pb-12">

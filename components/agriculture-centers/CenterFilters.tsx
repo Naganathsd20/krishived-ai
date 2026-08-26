@@ -70,7 +70,7 @@ export const CenterFilters: React.FC<CenterFiltersProps> = ({
   const [showGpsDisclosure, setShowGpsDisclosure] = useState<boolean>(false);
 
   const hasActiveFilters =
-    selectedState !== "All States" ||
+    selectedState !== "Karnataka" ||
     selectedDistrict !== "All Districts" ||
     selectedType !== "All" ||
     searchQuery !== "" ||
@@ -196,7 +196,6 @@ export const CenterFilters: React.FC<CenterFiltersProps> = ({
             }}
             className="w-full px-3 py-2 rounded-xl bg-slate-100/80 border border-slate-200/60 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
           >
-            <option value="All States">All States</option>
             {availableStates.map((st) => (
               <option key={st} value={st}>
                 {st}

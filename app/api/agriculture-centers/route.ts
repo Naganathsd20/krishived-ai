@@ -70,7 +70,8 @@ export async function GET(request: Request) {
 
     // 4. Extract Query Parameters
     const { searchParams } = new URL(request.url);
-    const stateParam = searchParams.get("state")?.trim() || "";
+    const rawState = searchParams.get("state")?.trim() || "Karnataka";
+    const targetState = rawState === "Maharashtra" ? "Maharashtra" : "Karnataka";
     const districtParam = searchParams.get("district")?.trim() || "";
     const typeParam = searchParams.get("type")?.trim() || "";
     const searchParam = searchParams.get("search")?.trim() || "";
@@ -100,15 +101,15 @@ export async function GET(request: Request) {
 
     const radiusKm = Math.min(500, Math.max(1, isNaN(radiusParam) ? 50 : radiusParam));
 
-    // 5. Build Base Database Filter Query
-    const filterQuery: any = { isVerified: true };
-
-    if (stateParam && stateParam !== "All States") {
-      filterQuery.state = { $regex: new RegExp(`^${stateParam}$`, "i") };
-    }
+    // 5. Build Base Database Filter Query (Strictly enforce selected State)
+    const filterQuery: any = {
+      isVerified: true,
+      state: { $regex: new RegExp(`^${targetState}$`, "i") },
+    };
 
     if (districtParam && districtParam !== "All Districts") {
-      filterQuery.district = { $regex: new RegExp(`^${districtParam}$`, "i") };
+      const cleanDistrict = districtParam.split("/")[0].trim();
+      filterQuery.district = { $regex: new RegExp(cleanDistrict, "i") };
     }
 
     if (typeParam && typeParam !== "All" && VALID_TYPES.includes(typeParam as AgricultureCenterType)) {
@@ -118,12 +119,17 @@ export async function GET(request: Request) {
     if (searchParam) {
       const sanitizedSearch = searchParam.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const searchRegex = new RegExp(sanitizedSearch, "i");
-      filterQuery.$or = [
-        { name: searchRegex },
-        { address: searchRegex },
-        { district: searchRegex },
-        { state: searchRegex },
+      filterQuery.$and = [
+        { state: { $regex: new RegExp(`^${targetState}$`, "i") } },
+        {
+          $or: [
+            { name: searchRegex },
+            { address: searchRegex },
+            { district: searchRegex },
+          ],
+        },
       ];
+      delete filterQuery.state;
     }
 
     // 6. Execute Queries & Distance Sorting
@@ -161,21 +167,24 @@ export async function GET(request: Request) {
       };
     });
 
-    // Distance Radius Filtering & Distance Sorting when coordinates are present
+    // Distance Radius Filtering & Distance Sorting when coordinates are present (strictly matching selected state)
     if (userLat !== null && userLng !== null) {
       processedCenters = processedCenters.filter(
-        (c) => c.distanceKm !== null && c.distanceKm !== undefined && c.distanceKm <= radiusKm
+        (c) =>
+          c.state?.toLowerCase() === targetState.toLowerCase() &&
+          c.distanceKm !== null &&
+          c.distanceKm !== undefined &&
+          c.distanceKm <= radiusKm
       );
       processedCenters.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
     }
 
-    // 7. Dynamic Distinct States and Districts for Filter Dropdowns
-    const [distinctStates, distinctDistricts] = await Promise.all([
-      AgricultureCenter.distinct("state", { isVerified: true }),
-      AgricultureCenter.distinct("district", { isVerified: true }),
-    ]);
-
-    const availableStates = (distinctStates as string[]).sort();
+    // 7. Dynamic Distinct States (Restricted to Karnataka & Maharashtra) and Districts for target State
+    const availableStates = ["Karnataka", "Maharashtra"];
+    const distinctDistricts = await AgricultureCenter.distinct("district", {
+      isVerified: true,
+      state: { $regex: new RegExp(`^${targetState}$`, "i") },
+    });
     const availableDistricts = (distinctDistricts as string[]).sort();
 
     // 8. Pagination Calculations
