@@ -116,7 +116,7 @@ export const ViewDetailsModal: React.FC<ViewDetailsModalProps> = ({
                 <div className="flex flex-wrap gap-2">
                   {recommendation.alternativeCrops.map((crop, idx) => (
                     <Badge key={idx} variant="glass" className="text-xs bg-slate-100 text-slate-800 border-slate-200">
-                      🌱 {crop}
+                      {crop}
                     </Badge>
                   ))}
                 </div>

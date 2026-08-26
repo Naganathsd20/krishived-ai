@@ -189,7 +189,7 @@ export default function WeatherSoilPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setToastMsg("✅ Recommendation deleted successfully.");
+        setToastMsg("Recommendation deleted successfully.");
         // Immediately refresh list & update count
         setSoilHistory((prev) => prev.filter((item) => item._id !== deleteModalRecId));
         setDeleteModalRecId(null);
@@ -197,7 +197,7 @@ export default function WeatherSoilPage() {
         throw new Error(data.error || "Failed to delete recommendation.");
       }
     } catch (err) {
-      setToastMsg("❌ Failed to delete recommendation.");
+      setToastMsg("Failed to delete recommendation.");
     } finally {
       setIsDeleting(false);
     }
@@ -233,7 +233,7 @@ export default function WeatherSoilPage() {
 
       {/* Page Header */}
       <PageHeader
-        title="🌦️ Weather & AI Soil Intelligence"
+        title="Weather & AI Soil Intelligence"
         description="Real-time atmospheric telemetry, micro-climate insights, and Google Gemini AI soil health & crop advisory engine."
         badge={
           <Badge variant="emerald" dot>
@@ -393,7 +393,7 @@ export default function WeatherSoilPage() {
                         leftIcon={<Check className="w-4 h-4 text-emerald-700" />}
                         className="bg-emerald-100/90 text-emerald-800 border border-emerald-300/80 cursor-not-allowed shadow-none"
                       >
-                        ✓ Saved
+                        Saved
                       </Button>
                     ) : (
                       <Button
@@ -417,7 +417,7 @@ export default function WeatherSoilPage() {
                   <div className="flex flex-wrap gap-2">
                     {soilResult.alternativeCrops.map((crop, idx) => (
                       <Badge key={idx} variant="glass" className="text-xs bg-white text-slate-800 border-slate-200">
-                        🌱 {crop}
+                        {crop}
                       </Badge>
                     ))}
                   </div>
@@ -547,7 +547,7 @@ export default function WeatherSoilPage() {
                           <div>
                             <div className="flex items-center gap-2">
                               <h4 className="text-base font-extrabold text-slate-900">
-                                🌱 {item.bestCrop}
+                                {item.bestCrop}
                               </h4>
                               <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
                                 <MapPin className="w-3.5 h-3.5 text-emerald-600" />
@@ -558,16 +558,16 @@ export default function WeatherSoilPage() {
                             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium mt-1">
                               <span className="flex items-center gap-1">
                                 <Thermometer className="w-3.5 h-3.5 text-amber-500" />
-                                🌡 {item.temperature}°C, {item.humidity}% humidity
+                                {item.temperature}°C, {item.humidity}% humidity
                               </span>
                               <span>•</span>
                               <span className="text-emerald-700 font-semibold">
-                                🌱 {item.soilHealthScore}
+                                {item.soilHealthScore}
                               </span>
                               <span>•</span>
                               <span className="flex items-center gap-1 text-slate-400">
                                 <Calendar className="w-3.5 h-3.5" />
-                                📅 {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recent"}
+                                {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recent"}
                               </span>
                             </div>
                           </div>

@@ -218,7 +218,7 @@ export default function QualityAssurancePage() {
       setServices(healthItems);
 
       if (isManual) {
-        showToast("✅ Quality Assurance diagnostics completed.");
+        showToast("Quality Assurance diagnostics completed.");
       }
     } catch (err) {
       console.error("Quality diagnostics error:", err);
@@ -255,7 +255,7 @@ export default function QualityAssurancePage() {
 
       {/* Page Header */}
       <PageHeader
-        title="🛡️ Quality Assurance"
+        title="Quality Assurance"
         description="Check the availability and reliability of your KrishiVed AI services."
         badge={
           <Badge variant="emerald" dot>

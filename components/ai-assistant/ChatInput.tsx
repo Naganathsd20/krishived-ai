@@ -234,7 +234,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       <div className="flex items-center justify-between text-[10px] text-slate-400 px-2 font-medium">
         <div className="flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-emerald-600" />
-          <span>🌱 Press Enter to send • Shift+Enter for a new line</span>
+          <span>Press Enter to send • Shift+Enter for a new line</span>
         </div>
         <span>Powered by KrishiMitra</span>
       </div>

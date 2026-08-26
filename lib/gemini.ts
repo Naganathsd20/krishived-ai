@@ -44,7 +44,7 @@ function classifyAndHandleInput(query: string): string | null {
     "namaste", "greetings", "hi there", "hello assistant", "hey there", "gmorning", "gevening"
   ];
   if (greetings.includes(q) || /^hi\b|^hello\b|^hey\b|^namaste\b/.test(q)) {
-    return "Hello! 👋 I am KrishiMitra, your Smart Farming Companion. How can I help you with your farm today? Feel free to ask about crop diseases, fertilizers, irrigation, soil health, weather, or government schemes!";
+    return "Hello! I am KrishiMitra, your Smart Farming Companion. How can I help you with your farm today? Feel free to ask about crop diseases, fertilizers, irrigation, soil health, weather, or government schemes!";
   }
 
   // 2. Check Gratitude & Simple Acknowledgments
@@ -53,7 +53,7 @@ function classifyAndHandleInput(query: string): string | null {
     "got it", "awesome", "perfect", "thank you so much", "thanks a lot", "fine", "cool", "nice", "yep", "yes"
   ];
   if (gratitude.includes(q) || /^thanks?\b|^thank you\b/.test(q)) {
-    return "You're very welcome! 🌱 I am always here to help you get the best yield from your crops. Feel free to ask whenever you have more agricultural questions!";
+    return "You're very welcome! I am always here to help you get the best yield from your crops. Feel free to ask whenever you have more agricultural questions!";
   }
 
   // 3. Known Off-Topic Entities / Celebrities / Non-Agri Topics (e.g. "Virat Kohli", "Messi", "Python", "Movies")
@@ -73,7 +73,7 @@ Please ask an agriculture-related question, such as:
   // 4. Check Seed / Supply Purchasing Intent ("where can i buy", "where to get seeds", "buy seeds")
   if ((q.includes("buy") || q.includes("purchase") || q.includes("where to get") || q.includes("where can i get")) && (q.includes("seed") || q.includes("fertilizer") || q.includes("pesticide") || q.includes("plant"))) {
     const cropName = q.replace(/(where|can|i|buy|purchase|to|get|seeds|seed|for|my|house|home|store)/gi, "").trim() || "crop";
-    return `### 🛒 Sourcing Certified ${cropName.toUpperCase()} Seeds & Farming Inputs
+    return `### Sourcing Certified ${cropName.toUpperCase()} Seeds & Farming Inputs
 
 1. **Krishi Vigyan Kendra (KVK) & Agriculture Dept:**
    - Visit your nearest District KVK or State Department of Agriculture office to get certified, high-yield, disease-resistant seed varieties.
@@ -148,11 +148,11 @@ Analyze the uploaded image with strict agricultural validation:
 STEP 1: AGRICULTURAL IMAGE VALIDATION
 Determine if the image visibly contains a real crop, plant, leaf, stem, fruit, vegetable, seedling, or agricultural field.
 - REJECT any non-agricultural content immediately. This includes: computer/coding/IDE/VS Code screenshots, website screens, document/PDF screenshots, printed text pages, selfies/people, vehicles, buildings, office items, random non-plant photographs.
-- If the image is NOT an agricultural/plant photo, set "isAgriculturalImage" to false, "imageType" to "non_agricultural", "hasVisibleSymptoms" to false, "disease" to "Non-Agricultural Image", "confidence" to "0%", "severity" to "Low", and set "validationMessage" to "⚠️ This image does not appear to contain a crop or plant. Please upload a clear photo of the affected crop, leaf, stem, fruit, or field for disease diagnosis."
+- If the image is NOT an agricultural/plant photo, set "isAgriculturalImage" to false, "imageType" to "non_agricultural", "hasVisibleSymptoms" to false, "disease" to "Non-Agricultural Image", "confidence" to "0%", "severity" to "Low", and set "validationMessage" to "This image does not appear to contain a crop or plant. Please upload a clear photo of the affected crop, leaf, stem, fruit, or field for disease diagnosis."
 
 STEP 2: IMAGE CLARITY & EVIDENCE EVALUATION
 If the image is a plant/crop photo, but is too blurry, dark, out of focus, distant, or ambiguous to discern plant details or disease symptoms:
-- Set "isAgriculturalImage" to true, "imageType" to "unclear", "hasVisibleSymptoms" to false, "disease" to "Inconclusive / Unclear Image", "confidence" to "0%", "severity" to "Low", and set "validationMessage" to "⚠️ A plant/crop is visible, but the image is not clear enough for reliable disease identification. Please upload a clearer close-up image of the affected leaf or plant."
+- Set "isAgriculturalImage" to true, "imageType" to "unclear", "hasVisibleSymptoms" to false, "disease" to "Inconclusive / Unclear Image", "confidence" to "0%", "severity" to "Low", and set "validationMessage" to "A plant/crop is visible, but the image is not clear enough for reliable disease identification. Please upload a clearer close-up image of the affected leaf or plant."
 
 STEP 3: HEALTHY PLANT EVALUATION
 If the image clearly shows a healthy plant/crop with NO visible disease, pest, or deficiency symptoms:
@@ -482,7 +482,7 @@ function generateDynamicQuerySpecificResponse(
   // --- WHEAT LOGIC ---
   if (crop === "Wheat") {
     if (intent === "irrigation_frequency") {
-      return `### 💧 Irrigation Frequency & Critical Stages for Wheat
+      return `### Irrigation Frequency & Critical Stages for Wheat
 
 Wheat requires **4 to 6 critical irrigations** during its growth cycle (spaced **15 to 20 days apart** depending on soil type and weather).
 
@@ -498,7 +498,7 @@ Wheat requires **4 to 6 critical irrigations** during its growth cycle (spaced *
     }
 
     if (intent === "water_requirement") {
-      return `### 🌊 Total Water Requirement for Wheat (Per Acre)
+      return `### Total Water Requirement for Wheat (Per Acre)
 
 On average, a wheat crop requires **450 to 650 mm of water** (approx. **18 to 26 acre-inches** or **1.8 to 2.6 million liters per acre**) across its 120–140 day growing season.
 
@@ -513,7 +513,7 @@ On average, a wheat crop requires **450 to 650 mm of water** (approx. **18 to 26
     }
 
     if (intent === "fertilizer") {
-      return `### 🧪 Recommended Fertilizer Schedule for Wheat (Per Acre)
+      return `### Recommended Fertilizer Schedule for Wheat (Per Acre)
 
 The general recommended NPK nutrient dose for high-yield wheat is **60 kg Nitrogen (N) : 24 kg Phosphorus (P₂O₅) : 16 kg Potash (K₂O) per acre** (equivalent to 150:60:40 kg/ha).
 
@@ -531,7 +531,7 @@ The general recommended NPK nutrient dose for high-yield wheat is **60 kg Nitrog
     }
 
     if (intent === "disease") {
-      return `### 🌱 Wheat Disease & Leaf Problem Diagnostics
+      return `### Wheat Disease & Leaf Problem Diagnostics
 
 #### Common Wheat Health Issues:
 1. **Yellow Rust / Stripe Rust (*Puccinia striiformis*):** Yellow pustules arranged in linear stripes on leaves.
@@ -543,7 +543,7 @@ The general recommended NPK nutrient dose for high-yield wheat is **60 kg Nitrog
 - **For Nutrient Deficiency:** Top-dress 20–25 kg/acre Neem-Coated Urea followed by light irrigation.`;
     }
 
-    return `### 🌾 Wheat Cultivation & Agronomic Overview
+    return `### Wheat Cultivation & Agronomic Overview
 
 1. **Sowing Window & Seed Rate:**
    - **Optimum Time:** November 1 to November 20 (Rabi season).
@@ -555,7 +555,7 @@ The general recommended NPK nutrient dose for high-yield wheat is **60 kg Nitrog
   // --- MAIZE LOGIC ---
   if (crop === "Maize") {
     if (intent === "fertilizer") {
-      return `### 🧪 Recommended Fertilizer Schedule for Maize (Per Acre)
+      return `### Recommended Fertilizer Schedule for Maize (Per Acre)
 
 1. **Basal Dose (At Planting):**
    - **DAP (Di-ammonium Phosphate):** 50 kg/acre
@@ -573,7 +573,7 @@ The general recommended NPK nutrient dose for high-yield wheat is **60 kg Nitrog
     }
 
     if (intent === "irrigation_frequency" || intent === "water_requirement") {
-      return `### 💧 Maize Water Requirement & Irrigation Management
+      return `### Maize Water Requirement & Irrigation Management
 
 Maize requires **500 to 650 mm of water** (approx. **20 to 26 acre-inches**) per acre across its 90–110 day life cycle.
 
@@ -586,7 +586,7 @@ Maize requires **500 to 650 mm of water** (approx. **20 to 26 acre-inches**) per
 *Avoid waterlogging as maize roots are highly susceptible to oxygen deprivation.*`;
     }
 
-    return `### 🌽 Maize Cultivation Guide
+    return `### Maize Cultivation Guide
 
 1. **Season & Seed Rate:** Kharif (June-July) or Rabi (Oct-Nov). Seed rate: 8-10 kg hybrid seeds per acre.
 2. **Spacing:** 60 cm between rows, 20 cm between plants.
@@ -596,7 +596,7 @@ Maize requires **500 to 650 mm of water** (approx. **20 to 26 acre-inches**) per
   // --- PADDY LOGIC ---
   if (crop === "Paddy") {
     if (intent === "irrigation_frequency" || intent === "water_requirement") {
-      return `### 💧 Paddy (Rice) Water & Irrigation Protocol
+      return `### Paddy (Rice) Water & Irrigation Protocol
 
 Paddy requires **1200 to 1400 mm of water** (approx. **48 to 56 acre-inches**) per acre due to puddling and standing water practices.
 
@@ -608,7 +608,7 @@ Paddy requires **1200 to 1400 mm of water** (approx. **48 to 56 acre-inches**) p
     }
 
     if (intent === "fertilizer") {
-      return `### 🧪 Recommended Fertilizer Schedule for Paddy (Per Acre)
+      return `### Recommended Fertilizer Schedule for Paddy (Per Acre)
 
 1. **Basal Application (During Final Puddling):**
    - **DAP:** 40–50 kg/acre
@@ -620,7 +620,7 @@ Paddy requires **1200 to 1400 mm of water** (approx. **48 to 56 acre-inches**) p
    - **Neem-Coated Urea:** 25 kg/acre + **MOP:** 15 kg/acre`;
     }
 
-    return `### 🌾 Paddy Cultivation Overview
+    return `### Paddy Cultivation Overview
 
 1. **Nursery & Seed Rate:** 15–20 kg/acre for inbred, 6–8 kg/acre for hybrids.
 2. **Transplanting:** 15–20 day old seedlings at 20cm x 15cm spacing.
@@ -630,7 +630,7 @@ Paddy requires **1200 to 1400 mm of water** (approx. **48 to 56 acre-inches**) p
   // --- TOMATO LOGIC ---
   if (crop === "Tomato") {
     if (intent === "disease") {
-      return `### 🌱 Tomato Leaf Yellowing & Disease Diagnostics
+      return `### Tomato Leaf Yellowing & Disease Diagnostics
 
 #### Common Causes of Yellow Tomato Leaves:
 1. **Early Blight (*Alternaria solani*):** Dark brown concentric target spots surrounded by yellow halos on lower leaves.
@@ -643,7 +643,7 @@ Paddy requires **1200 to 1400 mm of water** (approx. **48 to 56 acre-inches**) p
 - **Cultural Care:** Prune lower infected leaves up to 1 foot from ground and use drip irrigation.`;
     }
 
-    return `### 🍅 Tomato Cultivation & Management Guide
+    return `### Tomato Cultivation & Management Guide
 
 1. **Irrigation:** Requires **400–600 mm** water. Drip irrigation (30–45 mins daily or alternate days) prevents fruit cracking and blossom end rot.
 2. **Fertilization:** Basal FYM (10t/acre) + NPK 19:19:19 during vegetative stage, switching to 13:0:45 + Calcium Nitrate during fruiting.`;
@@ -651,7 +651,7 @@ Paddy requires **1200 to 1400 mm of water** (approx. **48 to 56 acre-inches**) p
 
   // --- TURMERIC LOGIC ---
   if (crop === "Turmeric") {
-    return `### 🌿 Turmeric Cultivation & Care Guide
+    return `### Turmeric Cultivation & Care Guide
 
 1. **Soil & Seed Rate:** Well-drained sandy loam (pH 5.5–7.5). Seed rate: 800–1000 kg mother rhizomes per acre.
 2. **Fertilizers (Per Acre):** FYM 10-12 tonnes + NPK 25kg N : 25kg P₂O₅ : 50kg K₂O in 3 split doses at 30, 60, and 90 days.
@@ -660,7 +660,7 @@ Paddy requires **1200 to 1400 mm of water** (approx. **48 to 56 acre-inches**) p
 
   // --- SCHEMES LOGIC ---
   if (q.includes("scheme") || q.includes("government") || q.includes("subsidy") || q.includes("pm-kisan") || q.includes("pmfby") || q.includes("kcc")) {
-    return `### 🏛 Key Government Schemes for Farmers
+    return `### Key Government Schemes for Farmers
 
 1. **PM-KISAN (Pradhan Mantri Kisan Samman Nidhi):**
    - Direct income support of **₹6,000 per year** in 3 equal installments of ₹2,000.
@@ -674,7 +674,7 @@ Paddy requires **1200 to 1400 mm of water** (approx. **48 to 56 acre-inches**) p
   const cleanSubject = query.replace(/(how|what|why|can|i|do|you|suggest|recommend|tell|me|about|the|for)/gi, "").trim();
 
   if (intent === "fertilizer") {
-    return `### 🧪 General Fertilizer Recommendation Principles
+    return `### General Fertilizer Recommendation Principles
 
 To receive the exact fertilizer formula, please mention your specific **crop name** (e.g., Wheat, Maize, Paddy, Tomato, Cotton).
 
@@ -685,7 +685,7 @@ To receive the exact fertilizer formula, please mention your specific **crop nam
   }
 
   if (intent === "irrigation_frequency" || intent === "water_requirement") {
-    return `### 💧 General Irrigation & Water Management
+    return `### General Irrigation & Water Management
 
 To get the precise irrigation schedule or water quantity per acre, please specify your **crop name** (e.g., Wheat, Paddy, Maize, Tomato).
 
@@ -695,7 +695,7 @@ To get the precise irrigation schedule or water quantity per acre, please specif
 3. **Soil Type:** Sandy soils require frequent light waterings; clay soils require deeper, less frequent irrigations.`;
   }
 
-  return `### 🌾 KrishiMitra Advice for: "${query}"
+  return `### KrishiMitra Advice for: "${query}"
 
 1. **Management Overview:**
    - For optimal cultivation of **${crop || cleanSubject || "your crop"}**, ensure soil testing for N-P-K balance and organic matter content prior to planting.

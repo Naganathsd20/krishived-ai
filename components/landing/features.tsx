@@ -23,63 +23,54 @@ export const featureItems = [
     title: "AI Disease Detection",
     description: "Scan leaf photos via camera to instantly diagnose bacterial blight, rust, or pest infestations with step-by-step organic remedies.",
     badge: "AI Vision",
-    emoji: "🤖",
   },
   {
     icon: Sprout,
     title: "Smart Crop Recommendation",
     description: "Match your field soil pH, NPK values, regional micro-climate, and season to discover optimal high-yield crop options.",
     badge: "Soil Engine",
-    emoji: "🌱",
   },
   {
     icon: CloudSun,
     title: "Weather Insights",
     description: "Hyper-local weather forecasts, humidity tracking, and automated rain alerts tailored to your exact village pin code.",
     badge: "Telemetry",
-    emoji: "🌦",
   },
   {
     icon: TrendingUp,
     title: "Live Mandi Prices",
     description: "Track live daily APMC and Mandi commodity rates across Indian market centers to sell your harvest at peak profit.",
     badge: "APMC Mandi",
-    emoji: "💹",
   },
   {
     icon: Landmark,
     title: "Government Schemes",
     description: "Discover eligible central & state agricultural subsidies, PM-KISAN payouts, Fasal Bima Yojana, and equipment grants.",
     badge: "Subsidies",
-    emoji: "🏛",
   },
   {
     icon: BookOpen,
     title: "Farm Diary",
     description: "Digital field logbook to record fertilizer purchases, irrigation cycles, sowing dates, and seasonal farm expenses.",
     badge: "Field Log",
-    emoji: "📓",
   },
   {
     icon: LineChart,
     title: "Farm Analytics",
     description: "Predict seasonal yield output, track input cost ROI, and monitor field vegetation health index over time.",
     badge: "Analytics",
-    emoji: "📊",
   },
   {
     icon: Bot,
     title: "AI Farming Assistant",
     description: "24/7 conversational voice & text advisor fluent in Hindi, Marathi, Telugu, Tamil, Kannada, Punjabi, and English.",
     badge: "Multilingual",
-    emoji: "💬",
   },
   {
     icon: MapPin,
     title: "Nearby Agriculture Centers",
     description: "Locate nearest Krishi Vigyan Kendras (KVK), authorized seed suppliers, soil testing labs, and tractor rentals.",
     badge: "GPS Locator",
-    emoji: "🗺",
   },
 ];
 
@@ -118,12 +109,9 @@ export const Features: React.FC = () => {
                       <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300 shadow-xs text-xl">
                         <Icon className="w-6 h-6" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{item.emoji}</span>
-                        <Badge variant="glass" className="text-[10px]">
-                          {item.badge}
-                        </Badge>
-                      </div>
+                      <Badge variant="glass" className="text-[10px]">
+                        {item.badge}
+                      </Badge>
                     </div>
                     <CardTitle className="text-lg group-hover:text-emerald-800 transition-colors">
                       {item.title}

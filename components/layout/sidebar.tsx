@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, ChevronRight } from "lucide-react";
 import { DASHBOARD_NAV_ITEMS } from "@/lib/constants";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -37,41 +36,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     href={item.href}
                     onClick={onClose}
                     className={cn(
-                      "group flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-200",
+                      "group flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200",
                       isActive
                         ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20"
                         : "text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/70"
                     )}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <Icon
                         className={cn(
-                          "w-4 h-4 transition-transform group-hover:scale-110",
+                          "w-4 h-4 shrink-0 transition-transform group-hover:scale-110",
                           isActive ? "text-white" : "text-slate-400 group-hover:text-emerald-600"
                         )}
                       />
-                      <span>{item.title}</span>
+                      <span className="truncate">{item.title}</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      {item.badge && (
-                        <Badge
-                          variant={isActive ? "glass" : "emerald"}
-                          className={cn("text-[9px] py-0 px-1.5", isActive && "text-white border-white/30")}
-                        >
-                          {item.badge}
-                        </Badge>
+                    <ChevronRight
+                      className={cn(
+                        "w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                        isActive ? "opacity-100 text-white" : "text-slate-400"
                       )}
-                      {item.isNew && (
-                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                      )}
-                      <ChevronRight
-                        className={cn(
-                          "w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity",
-                          isActive ? "opacity-100 text-white" : "text-slate-400"
-                        )}
-                      />
-                    </div>
+                    />
                   </Link>
                 );
               })}
@@ -91,10 +77,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
             Next-gen AI crop diagnosis & soil telemetry pipeline ready.
           </p>
-          <div className="flex items-center justify-between text-[10px] text-emerald-300/80 font-mono">
-            <span>Next.js 15</span>
-            <span>•</span>
-            <span>Framer Motion</span>
+          <div className="flex items-center justify-between text-[10px] text-emerald-300/80 font-medium">
+            <span>Built for Smarter Farming</span>
           </div>
         </div>
       </div>

@@ -125,11 +125,13 @@ export const Footer: React.FC = () => {
 
         {/* Bottom copyright */}
         <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} {APP_CONFIG.name}. Built with Next.js 15, TypeScript & Tailwind CSS.</p>
-          <div className="flex items-center gap-1">
-            <span>Engineered with</span>
-            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
-            <span>for Indian Farmers</span>
+          <p>© {new Date().getFullYear()} {APP_CONFIG.name}. AI-Powered Smart Agricultural Intelligence. All rights reserved.</p>
+          <div className="flex items-center gap-2 font-medium text-slate-400">
+            <span>Built for Smarter Farming</span>
+            <span>•</span>
+            <span className="px-2 py-0.5 rounded-md bg-slate-900 text-slate-300 font-mono text-[10px] font-bold border border-slate-800">
+              v{APP_CONFIG.version}
+            </span>
           </div>
         </div>
       </div>

@@ -21,7 +21,7 @@ export const AIFarmInsightsCard: React.FC<AIFarmInsightsCardProps> = ({ insights
             </div>
             <div>
               <CardTitle className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                <span>🤖 KrishiMitra Insights</span>
+                <span>KrishiMitra Insights</span>
               </CardTitle>
               <CardDescription className="text-xs text-slate-600">
                 Application-level insights generated from your real analytics data

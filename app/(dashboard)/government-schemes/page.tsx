@@ -126,7 +126,7 @@ export default function GovernmentSchemesPage() {
     <PageContainer>
       {/* Page Header */}
       <PageHeader
-        title="📜 Government Agriculture Schemes"
+        title="Government Agriculture Schemes"
         description="Official Government of India and State agricultural subsidy, insurance, and financial support schemes."
         badge={
           <Badge variant="emerald" dot>

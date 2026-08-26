@@ -235,7 +235,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[11px]">
             <Sparkles className="w-4 h-4 shrink-0 text-emerald-600" />
             <span className="leading-tight">
-              🌱 KrishiMitra is online.
+              KrishiMitra is online.
             </span>
           </div>
         </div>

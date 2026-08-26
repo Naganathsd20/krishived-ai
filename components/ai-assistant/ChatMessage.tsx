@@ -273,7 +273,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
 
               <div className="flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
                 <Sparkles className="w-3 h-3 text-emerald-600" />
-                <span>🌱 KrishiMitra</span>
+                <span>KrishiMitra</span>
               </div>
             </div>
           )}

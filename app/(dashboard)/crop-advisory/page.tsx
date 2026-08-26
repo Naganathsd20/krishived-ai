@@ -231,7 +231,7 @@ export default function CropAdvisoryPage() {
     setErrorMsg(null);
     const success = await fetchWeatherForCity(newCity);
     if (success) {
-      showToast(`✅ Telemetry updated for ${newCity}`);
+      showToast(`Telemetry updated for ${newCity}`);
     } else {
       setErrorMsg(`Unable to fetch real-time weather telemetry for ${newCity}. Please try again.`);
     }
@@ -304,7 +304,7 @@ export default function CropAdvisoryPage() {
       await fetchWeatherForCity(activeTargetCity);
 
       if (isManual) {
-        showToast(`✅ Crop advisory telemetry synchronized for ${activeTargetCity}!`);
+        showToast(`Crop advisory telemetry synchronized for ${activeTargetCity}!`);
       }
     } catch (err) {
       console.error("Error loading Crop Advisory data:", err);
@@ -407,7 +407,7 @@ export default function CropAdvisoryPage() {
 
       {/* Page Header */}
       <PageHeader
-        title="🌱 Crop Advisory"
+        title="Crop Advisory"
         description="Get personalized crop recommendations based on your soil, weather, and farm conditions."
         badge={
           <Badge variant="emerald" dot>
@@ -601,7 +601,7 @@ export default function CropAdvisoryPage() {
                         Primary Recommended Crop
                       </span>
                       <h2 className="text-2xl font-extrabold text-slate-900 mt-0.5">
-                        🌱 {primaryCrop}
+                        {primaryCrop}
                       </h2>
                     </div>
                   </div>
@@ -654,7 +654,7 @@ export default function CropAdvisoryPage() {
                       className="p-4 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-2"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900 truncate">🌱 {crop}</span>
+                        <span className="text-xs font-bold text-slate-900 truncate">{crop}</span>
                         <Badge variant="glass" className="text-[10px]">
                           Good Fit
                         </Badge>
@@ -737,7 +737,7 @@ export default function CropAdvisoryPage() {
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {/* Primary Crop Row */}
                   <tr className="bg-emerald-50/50 hover:bg-emerald-50">
-                    <td className="py-3.5 px-3 font-bold text-slate-900">🌱 {primaryCrop} (Primary)</td>
+                    <td className="py-3.5 px-3 font-bold text-slate-900">{primaryCrop} (Primary)</td>
                     <td className="py-3.5 px-3 text-emerald-800 font-semibold">{hasSoilData ? "Optimal" : "Good"}</td>
                     <td className="py-3.5 px-3 text-slate-700">High</td>
                     <td className="py-3.5 px-3 text-slate-700">{diseaseRiskLevel}</td>
@@ -749,7 +749,7 @@ export default function CropAdvisoryPage() {
                   {/* Alternative Crop Rows */}
                   {altCrops.map((c, i) => (
                     <tr key={i} className="hover:bg-slate-50">
-                      <td className="py-3.5 px-3 text-slate-800 font-semibold">🌱 {c}</td>
+                      <td className="py-3.5 px-3 text-slate-800 font-semibold">{c}</td>
                       <td className="py-3.5 px-3 text-slate-600">Good</td>
                       <td className="py-3.5 px-3 text-slate-600">Moderate</td>
                       <td className="py-3.5 px-3 text-slate-600">Low</td>

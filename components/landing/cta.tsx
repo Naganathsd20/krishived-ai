@@ -24,10 +24,9 @@ export const CTA: React.FC = () => {
           <Sprout className="absolute -right-6 -bottom-6 w-56 h-56 text-emerald-500/5 pointer-events-none rotate-12" />
 
           <div className="max-w-3xl mx-auto space-y-7 relative z-10">
-            {/* Section Badge */}
             <Badge variant="glass" className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider px-3.5 py-1 text-emerald-300 border-emerald-400/30 shadow-2xs inline-flex items-center gap-1.5">
               <Sprout className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              🌾 Start Your Smart Farming Journey
+              Start Your Smart Farming Journey
             </Badge>
 
             {/* Main Headline */}

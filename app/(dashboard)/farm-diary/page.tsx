@@ -265,7 +265,7 @@ export default function FarmDiaryPage() {
     <PageContainer>
       {/* Page Header */}
       <PageHeader
-        title="📖 Farmer Activity Diary"
+        title="Farmer Activity Diary"
         description="Record and review your daily field operations, crop inputs, irrigation, and farming expenses."
         badge={
           <Badge variant="emerald" dot>

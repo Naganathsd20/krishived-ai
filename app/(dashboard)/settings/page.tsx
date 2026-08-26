@@ -156,7 +156,7 @@ export default function SettingsPage() {
 
       if (res.ok && data?.success) {
         if (data.user) setDbUser(data.user);
-        showToast("✅ Preferences saved successfully!");
+        showToast("Preferences saved successfully!");
       } else {
         setErrorMsg(data?.error || "Failed to save preferences. Please try again.");
       }
@@ -240,7 +240,7 @@ export default function SettingsPage() {
 
       {/* Page Header */}
       <PageHeader
-        title="⚙️ Settings & Preferences"
+        title="Settings & Preferences"
         description="Manage your farm preferences and personalize your KrishiVed AI experience."
         badge={
           <Badge variant="emerald" dot>

@@ -230,7 +230,7 @@ export default function DiseaseDetectionPage() {
     <PageContainer>
       {/* Hero Section */}
       <PageHeader
-        title="🌿 AI Crop Disease Detection"
+        title="AI Crop Disease Detection"
         description="Upload a clear image of a crop or leaf. Our AI analyzes the image and identifies possible diseases within seconds."
         badge={
           <Badge variant="emerald" dot>
@@ -495,14 +495,14 @@ export default function DiseaseDetectionPage() {
                         </div>
                         <div className="space-y-1">
                           <Badge variant="warning" className="text-xs font-bold mb-1">
-                            ⚠️ Agricultural Image Validation Notice
+                            Agricultural Image Validation Notice
                           </Badge>
                           <h3 className="text-xl font-extrabold text-amber-950">
                             Non-Agricultural Image Detected
                           </h3>
                           <p className="text-sm font-semibold text-amber-900 leading-relaxed">
                             {analysisResult.validationMessage ||
-                              "⚠️ This image does not appear to contain a crop or plant. Please upload a clear photo of the affected crop, leaf, stem, fruit, or field for disease diagnosis."}
+                              "This image does not appear to contain a crop or plant. Please upload a clear photo of the affected crop, leaf, stem, fruit, or field for disease diagnosis."}
                           </p>
                         </div>
                       </div>
@@ -557,14 +557,14 @@ export default function DiseaseDetectionPage() {
                         </div>
                         <div className="space-y-1">
                           <Badge variant="warning" className="text-xs font-bold mb-1">
-                            ⚠️ Insufficient Visual Evidence
+                            Insufficient Visual Evidence
                           </Badge>
                           <h3 className="text-xl font-extrabold text-amber-950">
                             Image Unclear for Disease Diagnostics
                           </h3>
                           <p className="text-sm font-semibold text-amber-900 leading-relaxed">
                             {analysisResult.validationMessage ||
-                              "⚠️ A plant/crop is visible, but the image is not clear enough for reliable disease identification. Please upload a clearer close-up image of the affected leaf or plant."}
+                              "A plant/crop is visible, but the image is not clear enough for reliable disease identification. Please upload a clearer close-up image of the affected leaf or plant."}
                           </p>
                         </div>
                       </div>

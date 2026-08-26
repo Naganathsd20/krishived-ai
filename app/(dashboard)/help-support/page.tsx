@@ -174,7 +174,7 @@ export default function HelpSupportPage() {
     <PageContainer>
       {/* Page Header */}
       <PageHeader
-        title="❓ Help & Support"
+        title="Help & Support"
         description="Find simple guidance for using KrishiVed AI."
         badge={
           <Badge variant="emerald" dot>

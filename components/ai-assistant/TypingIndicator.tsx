@@ -21,7 +21,7 @@ export const TypingIndicator: React.FC = () => {
       {/* Typing Bubble */}
       <div className="rounded-2xl rounded-tl-xs px-4 py-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-emerald-500/20 shadow-md shadow-emerald-950/5 flex items-center gap-3">
         <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-          🌱 KrishiMitra is thinking...
+          KrishiMitra is thinking...
         </span>
         <div className="flex items-center gap-1.5 pt-0.5">
           {[0, 1, 2].map((i) => (

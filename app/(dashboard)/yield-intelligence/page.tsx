@@ -218,7 +218,7 @@ export default function YieldIntelligencePage() {
       }
 
       if (isManual) {
-        showToast("✅ Yield intelligence telemetry synchronized!");
+        showToast("Yield intelligence telemetry synchronized!");
       }
     } catch (err) {
       console.error("Error loading Yield Intelligence data:", err);
@@ -284,7 +284,7 @@ export default function YieldIntelligencePage() {
         setFormArea("");
         setFormYield("");
         setFormNotes("");
-        showToast("✅ Harvest record saved successfully!");
+        showToast("Harvest record saved successfully!");
       } else {
         throw new Error(data.error || "Failed to save harvest record.");
       }
@@ -309,13 +309,13 @@ export default function YieldIntelligencePage() {
       if (res.ok && data.success) {
         setHarvestLogs((prev) => prev.filter((item) => item._id !== id));
         setDeleteLogId(null);
-        showToast("✅ Harvest record deleted.");
+        showToast("Harvest record deleted.");
       } else {
         throw new Error(data.error || "Failed to delete harvest record.");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error deleting record.";
-      showToast(`❌ ${msg}`);
+      showToast(msg);
     } finally {
       setIsDeleting(false);
     }
@@ -395,7 +395,7 @@ export default function YieldIntelligencePage() {
 
       {/* Page Header */}
       <PageHeader
-        title="📈 Yield Intelligence"
+        title="Yield Intelligence"
         description="Analyze qualitative crop readiness and log post-harvest crop production."
         badge={
           <Badge variant="emerald" dot>

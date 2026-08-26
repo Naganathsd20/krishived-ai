@@ -27,7 +27,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onSelectSuggestion }) =>
 
         {/* Title */}
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-          👋 Welcome to KrishiMitra
+          Welcome to KrishiMitra
         </h1>
 
         {/* Subtitle */}
@@ -43,27 +43,27 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onSelectSuggestion }) =>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1 max-w-2xl mx-auto text-xs font-semibold text-slate-700 dark:text-slate-200">
           <span className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
             <Sprout className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>🌾 Crop recommendations</span>
+            <span>Crop recommendations</span>
           </span>
           <span className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
             <Leaf className="w-4 h-4 text-teal-600 shrink-0" />
-            <span>🌱 Plant disease diagnosis</span>
+            <span>Plant disease diagnosis</span>
           </span>
           <span className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
             <CloudSun className="w-4 h-4 text-sky-600 shrink-0" />
-            <span>🌦 Weather & irrigation</span>
+            <span>Weather & irrigation</span>
           </span>
           <span className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
             <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0" />
-            <span>🧪 Soil health & fertilizers</span>
+            <span>Soil health & fertilizers</span>
           </span>
           <span className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
             <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>🐛 Pest management</span>
+            <span>Pest management</span>
           </span>
           <span className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
             <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>🏛 Government schemes</span>
+            <span>Government schemes</span>
           </span>
         </div>
       </motion.div>

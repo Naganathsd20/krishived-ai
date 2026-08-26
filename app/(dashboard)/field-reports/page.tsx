@@ -392,10 +392,10 @@ export default function FieldReportsPage() {
       link.click();
       document.body.removeChild(link);
 
-      showToast("✅ CSV Field Report downloaded successfully.");
+      showToast("CSV Field Report downloaded successfully.");
     } catch (err) {
       console.error("Error generating CSV:", err);
-      showToast("❌ Failed to export CSV report.");
+      showToast("Failed to export CSV report.");
     }
   };
 
@@ -600,10 +600,10 @@ export default function FieldReportsPage() {
       }
 
       doc.save(`KrishiVed_Field_Report_${new Date().toISOString().split("T")[0]}.pdf`);
-      showToast("✅ PDF Field Report generated & downloaded.");
+      showToast("PDF Field Report generated & downloaded.");
     } catch (err) {
       console.error("Error generating PDF:", err);
-      showToast("❌ Failed to export PDF report.");
+      showToast("Failed to export PDF report.");
     }
   };
 
@@ -618,7 +618,7 @@ export default function FieldReportsPage() {
 
       {/* Page Header */}
       <PageHeader
-        title="📋 Field Reports"
+        title="Field Reports"
         description="Comprehensive, exportable agricultural telemetry report summarizing your farm health, crop disease diagnostics, soil fertility, and AI risk advisory."
         badge={
           <Badge variant="emerald" dot>
@@ -1029,7 +1029,7 @@ export default function FieldReportsPage() {
                           </div>
                           <div>
                             <h4 className="text-sm font-bold text-slate-900">
-                              🌱 {item.bestCrop} <span className="text-slate-400 font-normal">({item.city})</span>
+                              {item.bestCrop} <span className="text-slate-400 font-normal">({item.city})</span>
                             </h4>
                             <span className="text-xs text-slate-500 font-medium">
                               Soil Score: <strong>{item.soilHealthScore}</strong> • Saved {item.dateStr}

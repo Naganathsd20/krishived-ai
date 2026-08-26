@@ -179,7 +179,7 @@ export default function MandiPricesPage() {
       }
 
       if (isManual) {
-        showToast("✅ Mandi prices synchronized from Agmarknet.");
+        showToast("Mandi prices synchronized from Agmarknet.");
       }
     } catch (err) {
       console.error("Error loading mandi prices:", err);
@@ -243,7 +243,7 @@ export default function MandiPricesPage() {
 
       {/* Page Header */}
       <PageHeader
-        title="🏛️ APMC Mandi Market Prices"
+        title="APMC Mandi Market Prices"
         description="Official daily agricultural market arrivals and price telemetry from Agmarknet."
         badge={
           <Badge variant="emerald" dot>

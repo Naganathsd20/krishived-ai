@@ -164,10 +164,10 @@ export default function AnalyticsPage() {
       link.click();
       document.body.removeChild(link);
 
-      showToast("✅ CSV Farm Analytics report exported successfully.");
+      showToast("CSV Farm Analytics report exported successfully.");
     } catch (err) {
       console.error("CSV Export Error:", err);
-      showToast("❌ Unable to generate your report. Please try again.");
+      showToast("Unable to generate your report. Please try again.");
     } finally {
       setIsExportingCSV(false);
     }
@@ -398,10 +398,10 @@ export default function AnalyticsPage() {
       }
 
       doc.save(`KrishiVed_Farm_Analytics_${new Date().toISOString().split("T")[0]}.pdf`);
-      showToast("✅ PDF Farm Analytics report generated & downloaded.");
+      showToast("PDF Farm Analytics report generated & downloaded.");
     } catch (err) {
       console.error("PDF Export Error:", err);
-      showToast("❌ Unable to generate your report. Please try again.");
+      showToast("Unable to generate your report. Please try again.");
     } finally {
       setIsExportingPDF(false);
     }
