@@ -120,7 +120,7 @@ export async function verifyAdminAccess(): Promise<IAdminAuthResult> {
       error: "Forbidden. Administrative privileges required to view platform metrics.",
     };
   } catch (error) {
-    console.error("Error in verifyAdminAccess:", error);
+    console.error("Error in verifyAdminAccess:", error instanceof Error ? error.stack : error);
     return {
       isAuthorized: false,
       status: 500,

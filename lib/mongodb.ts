@@ -11,10 +11,11 @@ declare global {
   var mongooseCache: MongooseCache | undefined;
 }
 
+// Ensure DNS configuration for Windows SRV resolution prior to connection initialization
 if (typeof window === "undefined") {
   try {
     dns.setDefaultResultOrder("ipv4first");
-    dns.setServers(["8.8.8.8", "1.1.1.1"]);
+    dns.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
   } catch {
     // Ignore DNS override errors
   }
@@ -39,30 +40,46 @@ export async function connectDB(): Promise<typeof mongoose> {
     );
   }
 
-  if (cached.conn) {
-    return cached.conn;
+  // 1. Return active connection immediately if ready state is connected
+  if (mongoose.connection.readyState === 1) {
+    cached.conn = mongoose;
+    return mongoose;
+  }
+
+  // 2. Clear stale cached promises if the connection is disconnected (0) or invalid
+  if (mongoose.connection.readyState === 0 || mongoose.connection.readyState === 3) {
+    cached.promise = null;
+    cached.conn = null;
+  }
+
+  // 3. Ensure DNS resolvers are configured for Node.js SRV lookups on Windows
+  if (typeof window === "undefined") {
+    try {
+      dns.setDefaultResultOrder("ipv4first");
+      dns.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+    } catch {
+      // Ignore DNS override errors
+    }
   }
 
   if (!cached.promise) {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      maxPoolSize: 10,
     };
 
     cached.promise = (async () => {
       try {
-        return await mongoose.connect(MONGODB_URI, opts);
-      } catch (firstErr) {
-        // Fallback for Windows DNS resolution of MongoDB Atlas SRV (_mongodb._tcp) records
-        if (typeof window === "undefined") {
-          try {
-            dns.setServers(["8.8.8.8", "1.1.1.1"]);
-          } catch {
-            // Ignore DNS override errors
-          }
+        if (mongoose.connection.readyState !== 0) {
+          await mongoose.disconnect().catch(() => {});
         }
         return await mongoose.connect(MONGODB_URI, opts);
+      } catch (err) {
+        cached.promise = null;
+        cached.conn = null;
+        throw err;
       }
     })();
   }
