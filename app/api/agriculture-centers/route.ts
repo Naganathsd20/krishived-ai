@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import connectDB from "@/lib/mongodb";
 import AgricultureCenter from "@/models/AgricultureCenter";
-import { ensureAgricultureCentersSeeded } from "@/lib/seed-agriculture-centers";
+import { ensureAgricultureCentersSeeded, VERIFIED_AGRICULTURE_CENTERS } from "@/lib/seed-agriculture-centers";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { AgricultureCenterType, IAgricultureCenterResponse, IAgricultureCenter } from "@/types/agriculture-center";
 
@@ -28,14 +28,14 @@ function calculateHaversineKm(lat1: number, lon1: number, lat2: number, lon2: nu
 
 function sanitizeErrorMessage(rawError: unknown): string {
   if (typeof rawError === "string") {
-    if (rawError.includes("Mongo") || rawError.includes("ECONNREFUSED") || rawError.includes("connect")) {
+    if (rawError.includes("Mongo") || rawError.includes("ECONNREFUSED") || rawError.includes("connect") || rawError.includes("SSL")) {
       return "Unable to retrieve agriculture support centers. Please try again.";
     }
     return rawError;
   }
   if (rawError instanceof Error) {
     const msg = rawError.message;
-    if (msg.includes("Mongo") || msg.includes("ECONNREFUSED") || msg.includes("connect")) {
+    if (msg.includes("Mongo") || msg.includes("ECONNREFUSED") || msg.includes("connect") || msg.includes("SSL")) {
       return "Unable to retrieve agriculture support centers. Please try again.";
     }
     return msg;
@@ -64,11 +64,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // 3. Connect DB & Ensure Seed Catalog
-    await connectDB();
-    await ensureAgricultureCentersSeeded();
-
-    // 4. Extract Query Parameters
+    // 3. Extract Query Parameters
     const { searchParams } = new URL(request.url);
     const rawState = searchParams.get("state")?.trim() || "Karnataka";
     const targetState = rawState === "Maharashtra" ? "Maharashtra" : "Karnataka";
@@ -101,7 +97,7 @@ export async function GET(request: Request) {
 
     const radiusKm = Math.min(500, Math.max(1, isNaN(radiusParam) ? 50 : radiusParam));
 
-    // 5. Build Base Database Filter Query (Strictly enforce selected State)
+    // 4. Build Base Filter Query (Strictly enforce selected State)
     const filterQuery: any = {
       isVerified: true,
       state: { $regex: new RegExp(`^${targetState}$`, "i") },
@@ -132,13 +128,47 @@ export async function GET(request: Request) {
       delete filterQuery.state;
     }
 
-    // 6. Execute Queries & Distance Sorting
-    const allMatchingDocs = await AgricultureCenter.find(filterQuery)
-      .sort({ state: 1, district: 1, name: 1 })
-      .lean();
+    // 5. Connect DB & Execute Query with graceful local catalog fallback on connection error
+    let rawDocs: any[] = [];
+    let isDbConnected = false;
 
-    // Map documents to clean response objects with null fallbacks for missing contact info
-    let processedCenters: IAgricultureCenter[] = allMatchingDocs.map((doc: any) => {
+    try {
+      await connectDB();
+      await ensureAgricultureCentersSeeded();
+      rawDocs = await AgricultureCenter.find(filterQuery)
+        .sort({ state: 1, district: 1, name: 1 })
+        .lean();
+      isDbConnected = true;
+    } catch (dbError) {
+      console.warn("[Agri Centers API] Database connection error, using verified local catalog fallback:", dbError instanceof Error ? dbError.message : dbError);
+
+      // Fallback: Filter VERIFIED_AGRICULTURE_CENTERS in memory
+      rawDocs = VERIFIED_AGRICULTURE_CENTERS.filter((c) => {
+        if (c.state.toLowerCase() !== targetState.toLowerCase()) return false;
+
+        if (districtParam && districtParam !== "All Districts") {
+          const cleanDist = districtParam.split("/")[0].trim().toLowerCase();
+          if (!c.district.toLowerCase().includes(cleanDist)) return false;
+        }
+
+        if (typeParam && typeParam !== "All" && VALID_TYPES.includes(typeParam as AgricultureCenterType)) {
+          if (c.type !== typeParam) return false;
+        }
+
+        if (searchParam) {
+          const searchLower = searchParam.toLowerCase();
+          const matchName = c.name.toLowerCase().includes(searchLower);
+          const matchAddress = c.address.toLowerCase().includes(searchLower);
+          const matchDist = c.district.toLowerCase().includes(searchLower);
+          if (!matchName && !matchAddress && !matchDist) return false;
+        }
+
+        return true;
+      });
+    }
+
+    // Map documents/objects to clean response interface
+    let processedCenters: IAgricultureCenter[] = rawDocs.map((doc: any, idx: number) => {
       const lng = doc.location?.coordinates?.[0] || 0;
       const lat = doc.location?.coordinates?.[1] || 0;
 
@@ -148,7 +178,7 @@ export async function GET(request: Request) {
       }
 
       return {
-        _id: doc._id.toString(),
+        _id: doc._id ? doc._id.toString() : `center-${idx}-${doc.name.replace(/\s+/g, "-").toLowerCase()}`,
         name: doc.name,
         type: doc.type as AgricultureCenterType,
         address: doc.address,
@@ -179,21 +209,31 @@ export async function GET(request: Request) {
       processedCenters.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
     }
 
-    // 7. Dynamic Distinct States (Restricted to Karnataka & Maharashtra) and Districts for target State
+    // 6. Dynamic Distinct States (Restricted to Karnataka & Maharashtra) and Districts for target State
     const availableStates = ["Karnataka", "Maharashtra"];
-    const distinctDistricts = await AgricultureCenter.distinct("district", {
-      isVerified: true,
-      state: { $regex: new RegExp(`^${targetState}$`, "i") },
-    });
-    const availableDistricts = (distinctDistricts as string[]).sort();
+    let availableDistricts: string[] = [];
 
-    // 8. Pagination Calculations
+    if (isDbConnected) {
+      try {
+        const distinctDistricts = await AgricultureCenter.distinct("district", {
+          isVerified: true,
+          state: { $regex: new RegExp(`^${targetState}$`, "i") },
+        });
+        availableDistricts = (distinctDistricts as string[]).sort();
+      } catch {
+        availableDistricts = [...new Set(VERIFIED_AGRICULTURE_CENTERS.filter((c) => c.state.toLowerCase() === targetState.toLowerCase()).map((c) => c.district))].sort();
+      }
+    } else {
+      availableDistricts = [...new Set(VERIFIED_AGRICULTURE_CENTERS.filter((c) => c.state.toLowerCase() === targetState.toLowerCase()).map((c) => c.district))].sort();
+    }
+
+    // 7. Pagination Calculations
     const total = processedCenters.length;
     const totalPages = Math.ceil(total / limitParam) || 1;
     const skip = (pageParam - 1) * limitParam;
     const paginatedCenters = processedCenters.slice(skip, skip + limitParam);
 
-    // 9. Response Payload
+    // 8. Response Payload
     const responsePayload: IAgricultureCenterResponse = {
       success: true,
       centers: paginatedCenters,
